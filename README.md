@@ -1,5 +1,7 @@
 # codex
 
+Codex provides a historical context about devices connected to XMiDT.
+
 [![Build Status](https://travis-ci.org/Comcast/codex.svg?branch=master)](https://travis-ci.org/Comcast/codex)
 [![codecov.io](http://codecov.io/github/Comcast/codex/coverage.svg?branch=master)](http://codecov.io/github/Comcast/codex?branch=master)
 [![Code Climate](https://codeclimate.com/github/Comcast/codex/badges/gpa.svg)](https://codeclimate.com/github/Comcast/codex)
@@ -9,4 +11,4 @@
 [![GitHub release](https://img.shields.io/github/release/Comcast/codex.svg)](CHANGELOG.md)
 
 
-The common packages used for the codex project
+The common packages used for the codex project.
