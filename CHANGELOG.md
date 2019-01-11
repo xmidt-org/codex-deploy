@@ -11,4 +11,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[0.1.0]: https://github.com/Comcast/codex/compare/0.0.0...0.1.0
+[Unreleased]: https://github.com/Comcast/caduceus/compare/v0.1.0...HEAD
+[v0.1.0]: https://github.com/Comcast/codex/compare/0.0.0...v0.1.0
