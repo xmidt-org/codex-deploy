@@ -26,6 +26,7 @@ script:
   - go test -v -race $(go list ./... | grep -v "/vendor/")
   - go get github.com/haya14busa/goverage
   - goverage -coverprofile=coverage.txt ./...
+  - if [ -n "$(gofmt -s -l . | grep -v "vendor")" ]; then diff -u <(echo -n) <(gofmt -d $(gofmt -s -l . | grep -v "vendor")); fi
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
