@@ -1,6 +1,3 @@
-go_import_path: github.com/comcast/viper
-
-
 language: go
 
 go:
