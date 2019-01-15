@@ -1,0 +1,46 @@
+---
+primary:
+  address: ":7100"
+health:
+  address: ":7101"
+  options:
+    - "PayloadsOverZero"
+    - "PayloadsOverHundred"
+    - "PayloadsOverThousand"
+    - "PayloadsOverTenThousand"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+pprof:
+  address: ":7102"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+metric:
+  address: ":7103"
+  metricsOptions:
+    namespace: "webpa"
+    subsystem: "tr1d1um"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+log:
+  file: "stdout"
+  level: "INFO"
+  json: true
+
+config:
+  endpoint: "/device-status"
+  queueSize: 3000
+  db:
+    server: "db:11210"
+    username: "Administrator"
+    password: "somepassword"
+    bucket: "devices"
+    numRetries: 4
+
+authHeader: ["YXV0aEhlYWRlcg=="]
+
+webhook:
+  secret: "Basic YXV0aEhlYWRlcg=="
+  registrationInterval: "4m"
+  url: "http://svalinn:7100/api/v1/device-status"
+  timeout: "1m"
+  registrationURL: "http://127.0.0.1:6000/hook"
