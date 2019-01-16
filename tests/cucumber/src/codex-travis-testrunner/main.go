@@ -18,6 +18,7 @@
 package main
 
 import (
+	"common"
 	"flag"
 	"fmt"
 	"os"
@@ -29,7 +30,15 @@ func main() {
 	fmt.Println("Start Test Run")
 	locationoffeaturefiles := flag.String("feature", "", "path to feature files")
 	tags := flag.String("tags", "", "tags of testcases to be run")
+	//for travis ci testing:
+	//waitonlistener := flag.Bool("listenerfirst", false, "Start the listener first, then tests")
 	flag.Parse()
+
+	//wait for webhook registration
+
+	//wait for api
+	common.Debug()
+	//run tests
 	status := godog.RunWithOptions("godogs", func(s *godog.Suite) {
 		FeatureContext(s)
 	}, godog.Options{
