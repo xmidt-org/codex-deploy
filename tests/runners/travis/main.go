@@ -18,10 +18,11 @@
 package main
 
 import (
-	"common"
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/Comcast/codex/tests/common"
 
 	"github.com/DATA-DOG/godog"
 )
