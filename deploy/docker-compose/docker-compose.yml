@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   gungnir:
-    image: kcajmagic/gungnir-dev:latest
+    image: gungnir:local
     container_name: gungnir
     hostname: gungnir
     restart: on-failure
@@ -19,7 +19,7 @@ services:
       - db
 
   svalinn:
-    image: kcajmagic/svalinn-dev:latest
+    image: svalinn:local
     container_name: svalinn
     hostname: svalinn
     restart: on-failure
