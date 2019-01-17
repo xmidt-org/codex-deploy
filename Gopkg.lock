@@ -2,6 +2,18 @@
 
 
 [[projects]]
+  digest = "1:142cf0c63cd0fc3cc0fdd26854cb028bb33d569f1b80de05f353cd45850e688b"
+  name = "github.com/DATA-DOG/godog"
+  packages = [
+    ".",
+    "colors",
+    "gherkin",
+  ]
+  pruneopts = "UT"
+  revision = "75562b12d67aa758aba65b0072c763bccf7e9b00"
+  version = "v0.7.9"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -40,6 +52,22 @@
   pruneopts = "UT"
   revision = "4cdd86c173cfed1f47be88bd88327140f81bcede"
   version = "v0.16.0"
+
+[[projects]]
+  digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  version = "v1.1.1"
+
+[[projects]]
+  digest = "1:e73f5b0152105f18bc131fba127d9949305c8693f8a762588a82a48f61756f5f"
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  version = "v1.6.2"
 
 [[projects]]
   digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
@@ -246,9 +274,20 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:972c2427413d41a1e06ca4897e8528e5a1622894050e2f527b38ddf0f343f759"
+  digest = "1:ac83cf90d08b63ad5f7e020ef480d319ae890c208f8524622a2f3136e2686b02"
+  name = "github.com/stretchr/objx"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "477a77ecc69700c7cdeb1fa9e129548e1c1c393c"
+  version = "v0.1.1"
+
+[[projects]]
+  digest = "1:0bcc464dabcfad5393daf87c3f8142911d0f6c52569b837e91a1c15e890265f3"
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = [
+    "assert",
+    "mock",
+  ]
   pruneopts = "UT"
   revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
   version = "v1.3.0"
@@ -269,11 +308,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fe2af5c0e6b4188bb1907e051cd086dae4f7ab3a2f4c1b62c03fefca848ab900"
+  digest = "1:f6f6d9d6f80c9e32acc0f4f3b904e0b9f5b18a7757c2ef941121bd79a10e7bdf"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "a457fd036447854c0c02e89ea439481bdcf941a2"
+  revision = "11f53e03133963fb11ae0588e08b5e0b85be8be5"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -315,12 +354,12 @@
   version = "v1.5.2"
 
 [[projects]]
-  digest = "1:bce1f41989cec84a73eb4eb37cce730ccada525ed3df565f4edf9a916be3d65b"
+  digest = "1:95fc600062cee3516d382b9c4d6ef4b039b4a796110c9adaafc2566815e10ed6"
   name = "gopkg.in/couchbase/gocbcore.v7"
   packages = ["."]
   pruneopts = "UT"
-  revision = "168eae0b31c401fbefc79e9a9d4354e19ec50ad7"
-  version = "v7.1.10"
+  revision = "d6f6cc0c51cba2983dbff50e106394b755f847c4"
+  version = "v7.1.11"
 
 [[projects]]
   digest = "1:002e24bae6c5c2d00148cf04983fc5add942f5a929d38721d2f377dd7b5b6da9"
@@ -350,10 +389,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/DATA-DOG/godog",
     "github.com/goph/emperror",
+    "github.com/gorilla/mux",
     "github.com/hashicorp/vault/api",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
+    "github.com/stretchr/testify/mock",
     "gopkg.in/couchbase/gocb.v1",
   ]
   solver-name = "gps-cdcl"
