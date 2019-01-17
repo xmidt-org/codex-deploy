@@ -29,12 +29,14 @@ log:
 config:
   endpoint: "/device-status"
   queueSize: 3000
+  stateLimitPerDevice: 3
   db:
     server: "db:11210"
     username: "Administrator"
     password: "somepassword"
     bucket: "devices"
     numRetries: 4
+    timeout: 10m
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 

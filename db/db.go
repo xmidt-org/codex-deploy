@@ -29,7 +29,7 @@ import (
 // Interface describes the main functionality needed to connect to a db
 type Interface interface {
 	Initialize() error
-	GetHistory(deviceI string) (History, error)
+	GetHistory(deviceID string) (History, error)
 	GetTombstone(deviceID string) (map[string]Event, error)
 	UpdateHistory(deviceID string, events []Event) error
 	InsertEvent(deviceID string, event Event, tombstoneKey string) error
