@@ -20,9 +20,7 @@ install:
 
 script:
   - if [ -n "$(gofmt -s -l . | grep -v "vendor")" ]; then diff -u <(echo -n) <(gofmt -d $(gofmt -s -l . | grep -v "vendor")); fi
-  - go test -v -race $(go list ./... | grep -v "/vendor/")
-  - go get github.com/haya14busa/goverage
-  - goverage -coverprofile=coverage.txt ./...
+  - go test -v -race -coverprofile=coverage.txt  $(go list ./... | grep -v "/vendor/")
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
