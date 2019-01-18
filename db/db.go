@@ -19,11 +19,12 @@ package db
 
 import (
 	"errors"
-	"github.com/goph/emperror"
-	"gopkg.in/couchbase/gocb.v1"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goph/emperror"
+	"gopkg.in/couchbase/gocb.v1"
 )
 
 // Interface describes the main functionality needed to connect to a db
@@ -34,15 +35,6 @@ type Interface interface {
 	UpdateHistory(deviceID string, events []Event) error
 	InsertEvent(deviceID string, event Event, tombstoneKey string) error
 	RemoveAll() error
-}
-
-type bucketWrapper interface {
-	Manager(username, password string) *gocb.BucketManager
-	Get(key string, valuePtr interface{}) (gocb.Cas, error)
-	MutateIn(key string, cas gocb.Cas, expiry uint32) *gocb.MutateInBuilder
-	Counter(key string, delta, initial int64, expiry uint32) (uint64, gocb.Cas, error)
-	Insert(key string, value interface{}, expiry uint32) (gocb.Cas, error)
-	ExecuteN1qlQuery(q *gocb.N1qlQuery, params interface{}) (gocb.QueryResults, error)
 }
 
 // the prefixes for the different documents being stored in couchbase
@@ -61,15 +53,18 @@ var (
 
 // Connection contains the bucket connection and configuration values
 type Connection struct {
-	Server   string
-	Username string
-	Password string
-	Bucket   string
-	// number of times to try when initially connecting to the database
-	NumRetries int
+	// number of times to try when  connecting to the database
+	numRetries int
+	// multiplier of the wait time so that we can wait longer after each failure
+	waitTimeMult time.Duration
 	// the time duration to add when creating TTLs for history documents
-	Timeout    time.Duration
-	bucketConn bucketWrapper
+	timeout           time.Duration
+	historyPruner     historyPruner
+	historyModifier   historyModifier
+	tombstoneModifier tombstoneModifier
+	idGenerator       idGenerator
+	docGetter         docGetter
+	n1qlExecuter      n1qlExecuter
 }
 
 // History is a list of events related to a device id,
@@ -126,44 +121,65 @@ type Event struct {
 	Details map[string]interface{} `json:"details"`
 }
 
-// Initialize creates the connection with couchbase and opens the specified bucket
-func (db *Connection) Initialize() error {
-	var err error
-
-	cluster, err := gocb.Connect("couchbase://" + db.Server)
-	if err != nil {
-		return emperror.WrapWith(err, "Connecting to couchbase failed", "server", db.Server)
+// CreateDbConnection creates db connection and returns the struct to the consumer
+func CreateDbConnection(server, username, password, bucket string, numRetries int, timeout time.Duration) (*Connection, error) {
+	db := Connection{
+		timeout:      timeout,
+		numRetries:   numRetries,
+		waitTimeMult: 5,
 	}
+	cluster, err := connect("couchbase://" + server)
+	if err != nil {
+		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "server", server)
+	}
+
 	// for verbose gocb logging when debugging
 	//gocb.SetLogger(gocb.VerboseStdioLogger())
-	err = cluster.Authenticate(gocb.PasswordAuthenticator{
-		Username: db.Username,
-		Password: db.Password,
+
+	bucketConn, err := db.openBucket(cluster, username, password, bucket)
+	if err != nil {
+		return &Connection{}, emperror.With(err, "server", server)
+	}
+
+	db.historyPruner = bucketConn
+	db.historyModifier = bucketConn
+	db.tombstoneModifier = bucketConn
+	db.idGenerator = bucketConn
+	db.n1qlExecuter = bucketConn
+	db.docGetter = bucketConn
+
+	err = bucketConn.createPrimaryIndex("")
+	if err != nil {
+		return nil, emperror.Wrap(err, "Creating Primary Index failed")
+	}
+	return &db, nil
+}
+
+// openBucket creates the connection with couchbase and opens the specified bucket
+func (db *Connection) openBucket(cluster cluster, username, password, bucket string) (*bucketDecorator, error) {
+	var err error
+	err = cluster.authenticate(gocb.PasswordAuthenticator{
+		Username: username,
+		Password: password,
 	})
 	if err != nil {
-		return emperror.WrapWith(err, "Couchbase authentication failed", "server", db.Server,
-			"username", db.Username)
+		return nil, emperror.WrapWith(err, "Couchbase authentication failed", "username", username)
 	}
 
-	db.bucketConn, err = cluster.OpenBucket(db.Bucket, "")
+	bucketConn, err := cluster.openBucket(bucket)
 	// retry if it fails
 	waitTime := 1 * time.Second
-	for attempt := 0; attempt < db.NumRetries && err != nil; attempt++ {
+	for attempt := 0; attempt < db.numRetries && err != nil; attempt++ {
 		time.Sleep(waitTime)
-		db.bucketConn, err = cluster.OpenBucket(db.Bucket, "")
-		waitTime = waitTime * 5
+		bucketConn, err = cluster.openBucket(bucket)
+		waitTime = waitTime * db.waitTimeMult
 	}
 	if err != nil {
-		return emperror.WrapWith(err, "Opening bucket failed", "server", db.Server, "username", db.Username,
-			"number of retries", db.NumRetries)
+		return nil, emperror.WrapWith(err, "Opening bucket failed", "username", username,
+			"number of retries", db.numRetries)
 	}
 
-	err = db.bucketConn.Manager("", "").CreatePrimaryIndex("", true, false)
-	if err != nil {
-		return emperror.Wrap(err, "Creating Primary Index failed")
-	}
-
-	return nil
+	return bucketConn, nil
 }
 
 // GetHistory returns the history (list of events) for a given device
@@ -172,11 +188,11 @@ func (db *Connection) GetHistory(deviceID string) (History, error) {
 		deviceInfo History
 	)
 	if deviceID == "" {
-		return History{}, emperror.WrapWith(errors.New("Invalid device id"), "Get history not attempted",
+		return History{}, emperror.WrapWith(errInvaliddeviceID, "Get history not attempted",
 			"device id", deviceID)
 	}
 	key := strings.Join([]string{historyDoc, deviceID}, ":")
-	_, err := db.bucketConn.Get(key, &deviceInfo)
+	err := db.docGetter.get(key, &deviceInfo)
 	if err != nil {
 		return History{}, emperror.WrapWith(err, "Getting history from database failed", "device id", deviceID)
 	}
@@ -189,11 +205,11 @@ func (db *Connection) GetTombstone(deviceID string) (map[string]Event, error) {
 		deviceInfo map[string]Event
 	)
 	if deviceID == "" {
-		return map[string]Event{}, emperror.WrapWith(errors.New("Invalid device id"), "Get tombstone not attempted",
+		return map[string]Event{}, emperror.WrapWith(errInvaliddeviceID, "Get tombstone not attempted",
 			"device id", deviceID)
 	}
 	key := strings.Join([]string{tombstoneDoc, deviceID}, ":")
-	_, err := db.bucketConn.Get(key, &deviceInfo)
+	err := db.docGetter.get(key, &deviceInfo)
 	if err != nil {
 		return map[string]Event{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
 	}
@@ -202,9 +218,13 @@ func (db *Connection) GetTombstone(deviceID string) (map[string]Event, error) {
 
 // UpdateHistory updates the history to the list of events given for a given device
 func (db *Connection) UpdateHistory(deviceID string, events []Event) error {
+	if deviceID == "" {
+		return emperror.WrapWith(errInvaliddeviceID, "Update history not attempted",
+			"device id", deviceID)
+	}
 	key := strings.Join([]string{historyDoc, deviceID}, ":")
-	newTimeout := uint32(time.Now().Add(db.Timeout).Unix())
-	_, err := db.bucketConn.MutateIn(key, 0, newTimeout).Upsert("events", &events, false).Execute()
+	newTimeout := uint32(time.Now().Add(db.timeout).Unix())
+	err := db.historyPruner.pruneHistory(key, newTimeout, "events", &events)
 	if err != nil {
 		return emperror.WrapWith(err, "Update history failed", "device id", deviceID,
 			"events", events)
@@ -220,7 +240,7 @@ func (db *Connection) InsertEvent(deviceID string, event Event, tombstoneMapKey 
 	}
 	// get event id using the device id
 	counterKey := strings.Join([]string{counterDoc, deviceID}, ":")
-	eventID, _, err := db.bucketConn.Counter(counterKey, 1, 0, 0)
+	eventID, err := db.idGenerator.getNextID(counterKey, 1, 0, 0)
 	if err != nil {
 		return emperror.WrapWith(err, "Failed to get event id", "device id", deviceID)
 	}
@@ -241,15 +261,13 @@ func (db *Connection) InsertEvent(deviceID string, event Event, tombstoneMapKey 
 func (db *Connection) upsertToTombstone(deviceID string, tombstoneMapKey string, event Event) error {
 	tombstoneKey := strings.Join([]string{tombstoneDoc, deviceID}, ":")
 	events := map[string]Event{tombstoneMapKey: event}
-	_, err := db.bucketConn.Insert(tombstoneKey, &events, 0)
+	err := db.tombstoneModifier.create(tombstoneKey, &events, 0)
 	if err != nil && err != gocb.ErrKeyExists {
 		return emperror.WrapWith(err, "Failed to create tombstone", "device id", deviceID,
 			"event id", event.ID, "event", event)
 	}
 	if err != nil {
-		_, err = db.bucketConn.MutateIn(tombstoneKey, 0, 0).
-			Upsert(tombstoneMapKey, &event, false).
-			Execute()
+		err = db.tombstoneModifier.upsertTombstoneKey(tombstoneKey, tombstoneMapKey, &event)
 		if err != nil {
 			return emperror.WrapWith(err, "Failed to add event to tombstone", "device id", deviceID,
 				"event id", event.ID, "event", event)
@@ -259,18 +277,18 @@ func (db *Connection) upsertToTombstone(deviceID string, tombstoneMapKey string,
 }
 
 func (db *Connection) upsertToHistory(deviceID string, event Event) error {
-	newTimeout := uint32(time.Now().Add(db.Timeout).Unix())
+	newTimeout := uint32(time.Now().Add(db.timeout).Unix())
 	historyKey := strings.Join([]string{historyDoc, deviceID}, ":")
 	eventDoc := History{
 		Events: []Event{event},
 	}
-	_, err := db.bucketConn.Insert(historyKey, &eventDoc, newTimeout)
+	err := db.historyModifier.create(historyKey, &eventDoc, newTimeout)
 	if err != nil && err != gocb.ErrKeyExists {
 		return emperror.WrapWith(err, "Failed to create history document", "device id", deviceID,
 			"event id", event.ID, "event", event)
 	}
 	if err != nil {
-		_, err = db.bucketConn.MutateIn(historyKey, 0, newTimeout).ArrayPrepend("events", &event, false).Execute()
+		err = db.historyModifier.prependToHistory(historyKey, newTimeout, "events", &event)
 		if err != nil {
 			return emperror.WrapWith(err, "Failed to add event to history", "device id", deviceID,
 				"event id", event.ID, "event", event)
@@ -291,7 +309,7 @@ func isEventValid(deviceID string, event Event) (bool, error) {
 
 // RemoveAll removes everything in the database.  Used for testing
 func (db *Connection) RemoveAll() error {
-	_, err := db.bucketConn.ExecuteN1qlQuery(gocb.NewN1qlQuery("DELETE FROM devices;"), nil)
+	err := db.n1qlExecuter.executeN1qlQuery(gocb.NewN1qlQuery("DELETE FROM devices"), nil)
 	if err != nil {
 		return emperror.Wrap(err, "Removing all devices from database failed")
 	}
