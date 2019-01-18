@@ -2,9 +2,7 @@ version: '3.4'
 
 services:
   gungnir:
-    image: gungnir:local
-    container_name: gungnir
-    hostname: gungnir
+    image: gungnir:${GUNGNIR_VERSION}
     restart: on-failure
     ports:
       - 7000:7000
@@ -19,9 +17,7 @@ services:
       - db
 
   svalinn:
-    image: svalinn:local
-    container_name: svalinn
-    hostname: svalinn
+    image: svalinn:${SVALINN_VERSION}
     restart: on-failure
     ports:
       - 7100:7100
@@ -37,8 +33,6 @@ services:
 
   db:
     image: bentonam/couchbase-docker:community
-    container_name: db
-    hostname: db
     ports:
       - 8091:8091
       - 8092:8092
