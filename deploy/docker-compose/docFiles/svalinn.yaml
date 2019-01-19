@@ -37,6 +37,9 @@ config:
     bucket: "devices"
     numRetries: 4
     timeout: 10m
+  tombstoneKeys:
+    online: "/online$"
+    offline: "/offline$"
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
