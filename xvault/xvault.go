@@ -18,9 +18,16 @@
 package xvault
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/hashicorp/vault/api"
 	"github.com/spf13/viper"
+)
+
+var (
+	ErrEmptyRoleSecretID = errors.New("RoleID and SecretID can't be empty")
+	ErrEmptyBasePath     = errors.New("BasePath can't be empty")
 )
 
 type Config struct {
@@ -32,22 +39,22 @@ type Config struct {
 }
 
 type Client struct {
-	client   *api.Client
+	client   reader
 	basePath string
 }
 
 func Initialize(v *viper.Viper) (*Client, error) {
 	c := &Config{}
 	v.UnmarshalKey("vault", c)
-	return newClient(*c)
+	return initialize(*c)
 }
 
-func newClient(config Config) (*Client, error) {
+func initialize(config Config) (*Client, error) {
 	if config.RoleID == "" || config.SecretID == "" {
-		return nil, fmt.Errorf("RoleID and SecretID can't be empty")
+		return nil, ErrEmptyRoleSecretID
 	}
 	if config.BasePath == "" {
-		return nil, fmt.Errorf("BasePath can't be empty")
+		return nil, ErrEmptyBasePath
 
 	}
 	conf := &api.Config{
@@ -61,7 +68,7 @@ func newClient(config Config) (*Client, error) {
 		conf.MaxRetries = config.MaxRetries
 	}
 
-	client, err := api.NewClient(conf)
+	client, err := newClient(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -71,27 +78,25 @@ func newClient(config Config) (*Client, error) {
 		"secret_id": config.SecretID,
 	}
 
-	resp, err := client.Logical().Write("auth/approle/login", data)
-	if err != nil {
-		return nil, err
-	}
-	if resp.Auth == nil {
-		return nil, fmt.Errorf("no auth info returned")
-	}
+	err = authenticate(client, "auth/approle/login", data)
 
-	client.SetToken(resp.Auth.ClientToken)
 	return &Client{
 		client:   client,
 		basePath: config.BasePath,
 	}, nil
 }
 
-func (c *Client) GetKey(key string) (map[string]interface{}, error) {
-	secretValues, err := c.client.Logical().Read(key)
+func authenticate(auth authenticator, path string, data map[string]interface{}) error {
+	resp, err := auth.getAuth(path, data)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return secretValues.Data, nil
+	if resp == nil {
+		return fmt.Errorf("no auth info returned")
+	}
+
+	auth.setToken(resp.ClientToken)
+	return nil
 }
 
 func (c *Client) GetUsernamePassword(stage string, key string) (string, string) {
@@ -104,7 +109,7 @@ func (c *Client) GetUsernamePassword(stage string, key string) (string, string) 
 	} else {
 		path += fmt.Sprintf("/%s", key)
 	}
-	data, err := c.GetKey(path)
+	data, err := c.client.read(path)
 	if err != nil {
 		return "", ""
 	}
