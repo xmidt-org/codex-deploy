@@ -30,6 +30,8 @@ config:
   endpoint: "/device-status"
   queueSize: 3000
   stateLimitPerDevice: 3
+  metadataMaxSize: 1000
+  payloadMaxSize: 1000
   db:
     server: "db:11210"
     username: "Administrator"
@@ -37,9 +39,13 @@ config:
     bucket: "devices"
     numRetries: 4
     timeout: 10m
-  tombstoneKeys:
-    online: "/online$"
-    offline: "/offline$"
+  regexRules:
+    - regex: ".*/online$"
+      tombstoneKey: "online"
+      storePayload: true
+    - regex: ".*/offline$"
+      tombstoneKey: "offline"
+      storePayload: true
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
