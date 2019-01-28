@@ -26,26 +26,25 @@ log:
   level: "INFO"
   json: true
 
-config:
-  endpoint: "/device-status"
-  queueSize: 3000
-  stateLimitPerDevice: 3
-  metadataMaxSize: 1000
-  payloadMaxSize: 1000
-  db:
-    server: "db:11210"
-    username: "Administrator"
-    password: "somepassword"
-    bucket: "devices"
-    numRetries: 4
-    timeout: 10m
-  regexRules:
-    - regex: ".*/online$"
-      tombstoneKey: "online"
-      storePayload: true
-    - regex: ".*/offline$"
-      tombstoneKey: "offline"
-      storePayload: true
+endpoint: "/device-status"
+queueSize: 3000
+stateLimitPerDevice: 3
+metadataMaxSize: 1000
+payloadMaxSize: 1000
+db:
+  server: "db:11210"
+  username: "Administrator"
+  password: "somepassword"
+  bucket: "devices"
+  numRetries: 4
+  timeout: 10m
+regexRules:
+  - regex: ".*/online$"
+    tombstoneKey: "online"
+    storePayload: true
+  - regex: ".*/offline$"
+    tombstoneKey: "offline"
+    storePayload: true
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
