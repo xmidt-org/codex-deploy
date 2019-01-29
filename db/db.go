@@ -49,7 +49,15 @@ var (
 	errInvalidEvent    = errors.New("Invalid event")
 )
 
-// TODO: Possibly add a way to try to reconnect to the database after a command fails because the connection broke.
+// Config contains the initial configuration information needed to create a db connection.
+type Config struct {
+	Server     string
+	Username   string
+	Password   string
+	Bucket     string
+	NumRetries int
+	Timeout    time.Duration
+}
 
 // Connection contains the tools to edit the database.
 type Connection struct {
@@ -126,23 +134,23 @@ type Event struct {
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
-func CreateDbConnection(server, username, password, bucket string, numRetries int, timeout time.Duration) (*Connection, error) {
+func CreateDbConnection(config Config) (*Connection, error) {
 	db := Connection{
-		timeout:      timeout,
-		numRetries:   numRetries,
+		timeout:      config.Timeout,
+		numRetries:   config.NumRetries,
 		waitTimeMult: 5,
 	}
-	cluster, err := connect("couchbase://" + server)
+	cluster, err := connect("couchbase://" + config.Server)
 	if err != nil {
-		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "server", server)
+		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "server", config.Server)
 	}
 
 	// for verbose gocb logging when debugging
 	//gocb.SetLogger(gocb.VerboseStdioLogger())
 
-	bucketConn, err := db.openBucket(cluster, username, password, bucket)
+	bucketConn, err := db.openBucket(cluster, config.Username, config.Password, config.Bucket)
 	if err != nil {
-		return &Connection{}, emperror.With(err, "server", server)
+		return &Connection{}, emperror.With(err, "server", config.Server)
 	}
 
 	db.historyPruner = bucketConn
