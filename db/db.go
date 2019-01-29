@@ -27,7 +27,7 @@ import (
 	"gopkg.in/couchbase/gocb.v1"
 )
 
-// Interface describes the main functionality needed to connect to a db
+// Interface describes the main functionality needed to connect to a database.
 type Interface interface {
 	Initialize() error
 	GetHistory(deviceID string) (History, error)
@@ -37,7 +37,7 @@ type Interface interface {
 	RemoveAll() error
 }
 
-// the prefixes for the different documents being stored in couchbase
+// These constants are prefixes for the different documents being stored in couchbase.
 const (
 	historyDoc   = "history"
 	counterDoc   = "counter"
@@ -49,15 +49,15 @@ var (
 	errInvalidEvent    = errors.New("Invalid event")
 )
 
-// TODO: Add a way to try to reconnect to the database after a command fails because the connection broke
+// TODO: Possibly add a way to try to reconnect to the database after a command fails because the connection broke.
 
-// Connection contains the bucket connection and configuration values
+// Connection contains the tools to edit the database.
 type Connection struct {
-	// number of times to try when  connecting to the database
+	// Number of times to try when  connecting to the database
 	numRetries int
-	// multiplier of the wait time so that we can wait longer after each failure
+	// Multiplier of the wait time so that we can wait longer after each failure
 	waitTimeMult time.Duration
-	// the time duration to add when creating TTLs for history documents
+	// The time duration to add when creating TTLs for history documents
 	timeout           time.Duration
 	historyPruner     historyPruner
 	historyModifier   historyModifier
@@ -67,8 +67,7 @@ type Connection struct {
 	n1qlExecuter      n1qlExecuter
 }
 
-// History is a list of events related to a device id,
-// and has a TTL
+// History is a list of events related to a device id.  It has a TTL.
 //
 // swagger:model History
 type History struct {
@@ -76,36 +75,41 @@ type History struct {
 	Events []Event `json:"events"`
 }
 
-// Event represents the event information in the database
+// Tombstone is a map of events related to a device id.  It has no TTL.
+//
+// swagger:model Tombstone
+type Tombstone map[string]Event
+
+// Event represents the event information in the database.  It has no TTL.
 //
 // swagger:model Event
 type Event struct {
-	// the id for the event
+	// The id for the event.
 	//
 	// required: true
 	ID string `json:"id"`
 
-	// the time this event was found
+	// The time this event was found.
 	//
 	// required: true
 	Time int64 `json:"time"`
 
-	// the source of this event
+	// The source of this event.
 	//
 	// required: true
 	Source string `json:"src"`
 
-	// the destination of this event
+	// The destination of this event.
 	//
 	// required: true
 	Destination string `json:"dest"`
 
-	// the partners related to this device
+	// The partners related to this device.
 	//
 	// required: true
 	PartnerIDs []string `json:"partner_ids"`
 
-	// the transaction id for this event
+	// The transaction id for this event.
 	//
 	// required: true
 	TransactionUUID string `json:"transaction_uuid,omitempty"`
@@ -115,13 +119,13 @@ type Event struct {
 	// required: false
 	Payload []byte `json:"payload,omitempty"`
 
-	// other metadata and details related to this state
+	// Other metadata and details related to this state.
 	//
 	// required: true
 	Details map[string]interface{} `json:"details"`
 }
 
-// CreateDbConnection creates db connection and returns the struct to the consumer
+// CreateDbConnection creates db connection and returns the struct to the consumer.
 func CreateDbConnection(server, username, password, bucket string, numRetries int, timeout time.Duration) (*Connection, error) {
 	db := Connection{
 		timeout:      timeout,
@@ -155,7 +159,7 @@ func CreateDbConnection(server, username, password, bucket string, numRetries in
 	return &db, nil
 }
 
-// openBucket creates the connection with couchbase and opens the specified bucket
+// OpenBucket creates the connection with couchbase and opens the specified bucket.
 func (db *Connection) openBucket(cluster cluster, username, password, bucket string) (*bucketDecorator, error) {
 	var err error
 	err = cluster.authenticate(gocb.PasswordAuthenticator{
@@ -182,7 +186,7 @@ func (db *Connection) openBucket(cluster cluster, username, password, bucket str
 	return bucketConn, nil
 }
 
-// GetHistory returns the history (list of events) for a given device
+// GetHistory returns the history (list of events) for a given device.
 func (db *Connection) GetHistory(deviceID string) (History, error) {
 	var (
 		deviceInfo History
@@ -199,7 +203,7 @@ func (db *Connection) GetHistory(deviceID string) (History, error) {
 	return deviceInfo, nil
 }
 
-// GetTombstone returns the tombstone (map of events) for a given device
+// GetTombstone returns the tombstone (map of events) for a given device.
 func (db *Connection) GetTombstone(deviceID string) (map[string]Event, error) {
 	var (
 		deviceInfo map[string]Event
@@ -216,7 +220,7 @@ func (db *Connection) GetTombstone(deviceID string) (map[string]Event, error) {
 	return deviceInfo, nil
 }
 
-// UpdateHistory updates the history to the list of events given for a given device
+// UpdateHistory updates the history to the list of events given for a given device.
 func (db *Connection) UpdateHistory(deviceID string, events []Event) error {
 	if deviceID == "" {
 		return emperror.WrapWith(errInvaliddeviceID, "Update history not attempted",
@@ -232,7 +236,7 @@ func (db *Connection) UpdateHistory(deviceID string, events []Event) error {
 	return nil
 }
 
-// InsertEvent adds an event to the history of the given device id and adds it to the tombstone if a key is given
+// InsertEvent adds an event to the history of the given device id and adds it to the tombstone if a key is given.
 func (db *Connection) InsertEvent(deviceID string, event Event, tombstoneMapKey string) error {
 	if valid, err := isEventValid(deviceID, event); !valid {
 		return emperror.WrapWith(err, "Insert event not attempted", "device id", deviceID,
@@ -307,7 +311,7 @@ func isEventValid(deviceID string, event Event) (bool, error) {
 	return true, nil
 }
 
-// RemoveAll removes everything in the database.  Used for testing
+// RemoveAll removes everything in the database.  Used for testing.
 func (db *Connection) RemoveAll() error {
 	err := db.n1qlExecuter.executeN1qlQuery(gocb.NewN1qlQuery("DELETE FROM devices"), nil)
 	if err != nil {
