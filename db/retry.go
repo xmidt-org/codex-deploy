@@ -22,8 +22,8 @@ type Inserter interface {
 }
 
 type RetryInsertService struct {
-	Inserter
-	retries int
+	inserter Inserter
+	retries  int
 }
 
 func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
@@ -35,7 +35,7 @@ func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstone
 	}
 
 	for i := 0; i < retries+1; i++ {
-		if err = ri.InsertEvent(deviceID, event, tombstoneKey); err == nil {
+		if err = ri.inserter.InsertEvent(deviceID, event, tombstoneKey); err == nil {
 			break
 		}
 	}
@@ -52,7 +52,7 @@ type Updater interface {
 }
 
 type RetryUpdateService struct {
-	Updater
+	updater Updater
 	retries int
 }
 
@@ -65,7 +65,7 @@ func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) erro
 	}
 
 	for i := 0; i < retries+1; i++ {
-		if err = ru.UpdateHistory(deviceID, events); err == nil {
+		if err = ru.updater.UpdateHistory(deviceID, events); err == nil {
 			break
 		}
 	}
