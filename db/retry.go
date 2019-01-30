@@ -17,6 +17,8 @@
 
 package db
 
+import "time"
+
 type Inserter interface {
 	InsertEvent(deviceID string, event Event, tombstoneKey string) error
 }
@@ -24,6 +26,8 @@ type Inserter interface {
 type RetryInsertService struct {
 	inserter Inserter
 	retries  int
+	interval time.Duration
+	sleep    func(time.Duration)
 }
 
 func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
@@ -35,6 +39,9 @@ func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstone
 	}
 
 	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ri.sleep(ri.interval)
+		}
 		if err = ri.inserter.InsertEvent(deviceID, event, tombstoneKey); err == nil {
 			break
 		}
@@ -43,8 +50,13 @@ func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstone
 	return err
 }
 
-func CreateRetryInsertService(i Inserter, r int) RetryInsertService {
-	return RetryInsertService{i, r}
+func CreateRetryInsertService(i Inserter, r int, d time.Duration) RetryInsertService {
+	return RetryInsertService{
+		inserter: i,
+		retries:  r,
+		interval: d,
+		sleep:    time.Sleep,
+	}
 }
 
 type Updater interface {
@@ -52,8 +64,10 @@ type Updater interface {
 }
 
 type RetryUpdateService struct {
-	updater Updater
-	retries int
+	updater  Updater
+	retries  int
+	interval time.Duration
+	sleep    func(time.Duration)
 }
 
 func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) error {
@@ -65,6 +79,9 @@ func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) erro
 	}
 
 	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ru.sleep(ru.interval)
+		}
 		if err = ru.updater.UpdateHistory(deviceID, events); err == nil {
 			break
 		}
@@ -73,6 +90,11 @@ func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) erro
 	return err
 }
 
-func CreateRetryUpdateService(u Updater, r int) RetryUpdateService {
-	return RetryUpdateService{u, r}
+func CreateRetryUpdateService(u Updater, r int, d time.Duration) RetryUpdateService {
+	return RetryUpdateService{
+		updater:  u,
+		retries:  r,
+		interval: d,
+		sleep:    time.Sleep,
+	}
 }

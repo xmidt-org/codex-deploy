@@ -33,4 +33,6 @@
     bucket: "devices"
     username: "Administrator"
     password: "somepassword"
+    connectTimeout: 1m
+    opTimeout: 3s
     numRetries: 4
