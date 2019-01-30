@@ -51,12 +51,13 @@ var (
 
 // Config contains the initial configuration information needed to create a db connection.
 type Config struct {
-	Server     string
-	Username   string
-	Password   string
-	Bucket     string
-	NumRetries int
-	Timeout    time.Duration
+	Server         string
+	Username       string
+	Password       string
+	Bucket         string
+	NumRetries     int
+	ConnectTimeout time.Duration
+	OpTimeout      time.Duration
 }
 
 // Connection contains the tools to edit the database.
@@ -136,7 +137,7 @@ type Event struct {
 // CreateDbConnection creates db connection and returns the struct to the consumer.
 func CreateDbConnection(config Config) (*Connection, error) {
 	db := Connection{
-		timeout:      config.Timeout,
+		timeout:      config.ConnectTimeout,
 		numRetries:   config.NumRetries,
 		waitTimeMult: 5,
 	}
@@ -164,6 +165,7 @@ func CreateDbConnection(config Config) (*Connection, error) {
 	if err != nil {
 		return nil, emperror.Wrap(err, "Creating Primary Index failed")
 	}
+	bucketConn.SetOperationTimeout(config.OpTimeout)
 	return &db, nil
 }
 
