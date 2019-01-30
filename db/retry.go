@@ -98,3 +98,89 @@ func CreateRetryUpdateService(u Updater, r int, d time.Duration) RetryUpdateServ
 		sleep:    time.Sleep,
 	}
 }
+
+type TombstoneGetter interface {
+	GetTombstone(deviceID string) (map[string]Event, error)
+}
+
+type RetryTGService struct {
+	tg       TombstoneGetter
+	retries  int
+	interval time.Duration
+	sleep    func(time.Duration)
+}
+
+func (rtg RetryTGService) GetTombstone(deviceID string) (map[string]Event, error) {
+	var (
+		err       error
+		tombstone map[string]Event
+	)
+
+	retries := rtg.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			rtg.sleep(rtg.interval)
+		}
+		if tombstone, err = rtg.tg.GetTombstone(deviceID); err == nil {
+			break
+		}
+	}
+
+	return tombstone, err
+}
+
+func CreateRetryTGService(t TombstoneGetter, r int, d time.Duration) RetryTGService {
+	return RetryTGService{
+		tg:       t,
+		retries:  r,
+		interval: d,
+		sleep:    time.Sleep,
+	}
+}
+
+type HistoryGetter interface {
+	GetHistory(deviceID string) (History, error)
+}
+
+type RetryHGService struct {
+	hg       HistoryGetter
+	retries  int
+	interval time.Duration
+	sleep    func(time.Duration)
+}
+
+func (rhg RetryHGService) GetHistory(deviceID string) (History, error) {
+	var (
+		err     error
+		history History
+	)
+
+	retries := rhg.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			rhg.sleep(rhg.interval)
+		}
+		if history, err = rhg.hg.GetHistory(deviceID); err == nil {
+			break
+		}
+	}
+
+	return history, err
+}
+
+func CreateRetryHGService(h HistoryGetter, r int, d time.Duration) RetryHGService {
+	return RetryHGService{
+		hg:       h,
+		retries:  r,
+		interval: d,
+		sleep:    time.Sleep,
+	}
+}
