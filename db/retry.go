@@ -19,30 +19,25 @@ package db
 
 import "time"
 
-type Inserter interface {
-	InsertEvent(deviceID string, event Event, tombstoneKey string) error
-}
-
-type RetryInsertService struct {
-	inserter Inserter
+type retryConfig struct {
 	retries  int
 	interval time.Duration
 	sleep    func(time.Duration)
 }
 
-func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
+func execute(config retryConfig, op func() error) error {
 	var err error
 
-	retries := ri.retries
+	retries := config.retries
 	if retries < 1 {
 		retries = 0
 	}
 
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ri.sleep(ri.interval)
+			config.sleep(config.interval)
 		}
-		if err = ri.inserter.InsertEvent(deviceID, event, tombstoneKey); err == nil {
+		if err = op(); err == nil {
 			break
 		}
 	}
@@ -50,12 +45,29 @@ func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstone
 	return err
 }
 
-func CreateRetryInsertService(i Inserter, r int, d time.Duration) RetryInsertService {
+type Inserter interface {
+	InsertEvent(deviceID string, event Event, tombstoneKey string) error
+}
+
+type RetryInsertService struct {
+	inserter Inserter
+	config   retryConfig
+}
+
+func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
+	return execute(ri.config, func() error {
+		return ri.inserter.InsertEvent(deviceID, event, tombstoneKey)
+	})
+}
+
+func CreateRetryInsertService(inserter Inserter, retries int, interval time.Duration) RetryInsertService {
 	return RetryInsertService{
-		inserter: i,
-		retries:  r,
-		interval: d,
-		sleep:    time.Sleep,
+		inserter: inserter,
+		config: retryConfig{
+			retries:  retries,
+			interval: interval,
+			sleep:    time.Sleep,
+		},
 	}
 }
 
@@ -64,38 +76,24 @@ type Updater interface {
 }
 
 type RetryUpdateService struct {
-	updater  Updater
-	retries  int
-	interval time.Duration
-	sleep    func(time.Duration)
+	updater Updater
+	config  retryConfig
 }
 
 func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) error {
-	var err error
-
-	retries := ru.retries
-	if retries < 1 {
-		retries = 0
-	}
-
-	for i := 0; i < retries+1; i++ {
-		if i > 0 {
-			ru.sleep(ru.interval)
-		}
-		if err = ru.updater.UpdateHistory(deviceID, events); err == nil {
-			break
-		}
-	}
-
-	return err
+	return execute(ru.config, func() error {
+		return ru.updater.UpdateHistory(deviceID, events)
+	})
 }
 
-func CreateRetryUpdateService(u Updater, r int, d time.Duration) RetryUpdateService {
+func CreateRetryUpdateService(updater Updater, retries int, interval time.Duration) RetryUpdateService {
 	return RetryUpdateService{
-		updater:  u,
-		retries:  r,
-		interval: d,
-		sleep:    time.Sleep,
+		updater: updater,
+		config: retryConfig{
+			retries:  retries,
+			interval: interval,
+			sleep:    time.Sleep,
+		},
 	}
 }
 
@@ -133,11 +131,11 @@ func (rtg RetryTGService) GetTombstone(deviceID string) (map[string]Event, error
 	return tombstone, err
 }
 
-func CreateRetryTGService(t TombstoneGetter, r int, d time.Duration) RetryTGService {
+func CreateRetryTGService(tombstoneGetter TombstoneGetter, retries int, interval time.Duration) RetryTGService {
 	return RetryTGService{
-		tg:       t,
-		retries:  r,
-		interval: d,
+		tg:       tombstoneGetter,
+		retries:  retries,
+		interval: interval,
 		sleep:    time.Sleep,
 	}
 }
@@ -176,11 +174,11 @@ func (rhg RetryHGService) GetHistory(deviceID string) (History, error) {
 	return history, err
 }
 
-func CreateRetryHGService(h HistoryGetter, r int, d time.Duration) RetryHGService {
+func CreateRetryHGService(historyGetter HistoryGetter, retries int, interval time.Duration) RetryHGService {
 	return RetryHGService{
-		hg:       h,
-		retries:  r,
-		interval: d,
+		hg:       historyGetter,
+		retries:  retries,
+		interval: interval,
 		sleep:    time.Sleep,
 	}
 }

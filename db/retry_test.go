@@ -79,10 +79,12 @@ func TestRetryInsertEvent(t *testing.T) {
 
 			retryInsertService := RetryInsertService{
 				inserter: mockObj,
-				retries:  tc.retries,
-				interval: interval,
-				sleep: func(t time.Duration) {
-					assert.Equal(interval, t)
+				config: retryConfig{
+					retries:  tc.retries,
+					interval: interval,
+					sleep: func(t time.Duration) {
+						assert.Equal(interval, t)
+					},
 				},
 			}
 			err := retryInsertService.InsertEvent("", Event{}, "")
@@ -99,14 +101,16 @@ func TestRetryInsertEvent(t *testing.T) {
 func TestCreateRetryInsertService(t *testing.T) {
 	r := RetryInsertService{
 		inserter: new(mockInserter),
-		retries:  322,
-		interval: 2 * time.Minute,
+		config: retryConfig{
+			retries:  322,
+			interval: 2 * time.Minute,
+		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryInsertService(r.inserter, r.retries, r.interval)
+	newService := CreateRetryInsertService(r.inserter, r.config.retries, r.config.interval)
 	assert.Equal(r.inserter, newService.inserter)
-	assert.Equal(r.retries, newService.retries)
-	assert.Equal(r.interval, newService.interval)
+	assert.Equal(r.config.retries, newService.config.retries)
+	assert.Equal(r.config.interval, newService.config.interval)
 }
 
 func TestRetryUpdateHistory(t *testing.T) {
@@ -161,11 +165,13 @@ func TestRetryUpdateHistory(t *testing.T) {
 			}
 
 			retryInsertService := RetryUpdateService{
-				updater:  mockObj,
-				retries:  tc.retries,
-				interval: interval,
-				sleep: func(t time.Duration) {
-					assert.Equal(interval, t)
+				updater: mockObj,
+				config: retryConfig{
+					retries:  tc.retries,
+					interval: interval,
+					sleep: func(t time.Duration) {
+						assert.Equal(interval, t)
+					},
 				},
 			}
 			err := retryInsertService.UpdateHistory("", []Event{})
@@ -182,15 +188,17 @@ func TestRetryUpdateHistory(t *testing.T) {
 
 func TestCreateRetryUpdateService(t *testing.T) {
 	r := RetryUpdateService{
-		updater:  new(mockUpdater),
-		retries:  322,
-		interval: 2 * time.Minute,
+		updater: new(mockUpdater),
+		config: retryConfig{
+			retries:  322,
+			interval: 2 * time.Minute,
+		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryUpdateService(r.updater, r.retries, r.interval)
+	newService := CreateRetryUpdateService(r.updater, r.config.retries, r.config.interval)
 	assert.Equal(r.updater, newService.updater)
-	assert.Equal(r.retries, newService.retries)
-	assert.Equal(r.interval, newService.interval)
+	assert.Equal(r.config.retries, newService.config.retries)
+	assert.Equal(r.config.interval, newService.config.interval)
 }
 
 func TestRetryGetTombstone(t *testing.T) {

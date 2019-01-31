@@ -33,6 +33,7 @@ metadataMaxSize: 1000
 payloadMaxSize: 1000
 insertRetries: 3
 pruneRetries: 3
+getRetries: 3
 retryInterval: 10s
 db:
   server: "db:11210"
