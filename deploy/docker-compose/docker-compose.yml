@@ -32,28 +32,16 @@ services:
       - db
 
   db:
-    image: bentonam/couchbase-docker:community
+    image: cockroachdb/cockroach:v2.1.4
+    command: start --insecure
     ports:
-      - 8091:8091
-      - 8092:8092
-      - 8093:8093
-      - 8094:8094
-      - 11210:11210
-    environment:
-      CLUSTER_USERNAME: Administrator
-      CLUSTER_PASSWORD: somepassword
-      CLUSTER_NAME: My Couchbase Cluster
-      SERVICES: data,index,query,fts
-      CLUSTER_RAMSIZE: 500
-      BUCKET: devices
-      BUCKET_RAMSIZE: 300
-      NODE_INIT_INDEX_PATH: /opt/couchbase/var/lib/couchbase/indexes
-      RBAC_USERNAME: devices
-      RBAC_PASSWORD: password123
-      RBAC_PASSWORD: bucket_full_access[devices]
-      ENABLE_FLUSH: 1
+      - 26257:26257
+      - 8080:8080
     networks:
       - back-tier
+    volumes:
+      - ./cockroach-data/roach1:/cockroach/cockroach-data
+      - ./certs:/cockroach/certs
 
 networks:
   back-tier:

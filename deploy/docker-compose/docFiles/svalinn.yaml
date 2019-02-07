@@ -31,15 +31,15 @@ queueSize: 3000
 stateLimitPerDevice: 3
 metadataMaxSize: 1000
 payloadMaxSize: 1000
-insertRetries: 3
-pruneRetries: 3
-getRetries: 3
+insertRetries: 0
+pruneRetries: 0
+getRetries: 0
 retryInterval: 10s
 db:
-  server: "db:11210"
-  username: "Administrator"
-  password: "somepassword"
-  bucket: "devices"
+  server: "db:26257"
+  username: "roachadmin"
+  database: "devices"
+  table: "events"
   numRetries: 4
   connectTimeout: 1m
   opTimeout: 3s

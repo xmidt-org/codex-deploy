@@ -18,30 +18,34 @@
 package db
 
 import (
-	"gopkg.in/couchbase/gocb.v1"
+	"database/sql"
+
+	_ "github.com/lib/pq"
 )
 
 type (
-	cluster interface {
-		authenticate(gocb.Authenticator) error
-		openBucket(bucket string) (*bucketDecorator, error)
+	executer interface {
+		execute(query string, args ...interface{}) error
+	}
+	enquirer interface {
+		query(obj interface{}, query string, args ...interface{}) (*sql.Rows, error)
 	}
 )
 
-type clusterDecorator struct {
-	*gocb.Cluster
+type dbDecorator struct {
+	*sql.DB
 }
 
-func (c *clusterDecorator) authenticate(auth gocb.Authenticator) error {
-	return c.Authenticate(auth)
+func (b *dbDecorator) execute(query string, args ...interface{}) error {
+	_, err := b.Exec(query, args...)
+	return err
 }
 
-func (c *clusterDecorator) openBucket(bucket string) (*bucketDecorator, error) {
-	b, err := c.OpenBucket(bucket, "")
-	return &bucketDecorator{b}, err
+func (b *dbDecorator) query(obj interface{}, query string, args ...interface{}) (*sql.Rows, error) {
+	return b.Query(query, args...)
 }
 
-func connect(connSpecStr string) (cluster, error) {
-	c, err := gocb.Connect(connSpecStr)
-	return &clusterDecorator{c}, err
+func connect(connSpecStr string) (*dbDecorator, error) {
+	c, err := sql.Open("postgres", connSpecStr)
+	return &dbDecorator{c}, err
 }
