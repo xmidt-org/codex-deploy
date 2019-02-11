@@ -72,34 +72,6 @@ type Verify interface {
 	VerifyMessage(message string, signature []byte) bool
 }
 
-func stringEncode(data []byte) string {
-	// encode as ascii85 string
-	buffer := &bytes.Buffer{}
-	encoder := ascii85.NewEncoder(buffer)
-	_, err := encoder.Write(data)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error from ascii85.Write: %s\n", err)
-		return ""
-	}
-	err = encoder.Close()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error from ascii85.Close: %s\n", err)
-		return ""
-	}
-
-	return buffer.String()
-}
-
-func stringDecode(str string) []byte {
-	// decode the ascii85
-	decoded, err := ioutil.ReadAll(ascii85.NewDecoder(strings.NewReader(str)))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error from ascii85.NewDecoder: %s\n", err)
-		return []byte{}
-	}
-	return decoded
-}
-
 // GeneratePrivateKey will create a private key with the size given
 // size must be greater than 64 or else it will default to 64.
 //
