@@ -19,8 +19,6 @@ package db
 
 import (
 	"errors"
-	"log"
-	"regexp"
 	"time"
 
 	"github.com/goph/emperror"
@@ -28,9 +26,9 @@ import (
 
 // Interface describes the main functionality needed to connect to a database.
 type Interface interface {
-	GetEvents(deviceID string) ([]Record, error)
-	PruneEvents(t time.Time) error
-	InsertEvent(record Record) error
+	GetRecords(deviceID string) ([]Record, error)
+	PruneRecords(t time.Time) error
+	InsertRecord(record Record) error
 	RemoveAll() error
 }
 
@@ -50,9 +48,7 @@ var (
 type Config struct {
 	Server         string
 	Username       string
-	Password       string
 	Database       string
-	Table          string
 	SSLRootCert    string
 	SSLKey         string
 	SSLCert        string
@@ -68,10 +64,10 @@ type Connection struct {
 	// Multiplier of the wait time so that we can wait longer after each failure
 	waitTimeMult time.Duration
 	// The time duration to add when creating TTLs for history documents
-	timeout  time.Duration
-	table    string
-	executer executer
-	enquirer enquirer
+	timeout time.Duration
+	finder  finder
+	creator creator
+	deleter deleter
 }
 
 // Event represents the event information in the database.  It has no TTL.
@@ -120,11 +116,16 @@ type Event struct {
 }
 
 type Record struct {
-	ID        int64     `json:"id"`
-	DeviceID  string    `json:"deviceid`
+	ID        int64     `json:"id" gorm:"AUTO_INCREMENT"`
+	DeviceID  string    `json:"deviceid" gorm:"not null"`
 	BirthDate time.Time `json:"birthdate"`
 	DeathDate time.Time `json:"deathdate"`
-	Data      []byte    `json:"data"`
+	Data      []byte    `json:"data" gorm:"not null"`
+}
+
+// set User's table name to be `profiles`
+func (Record) TableName() string {
+	return "events"
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
@@ -135,15 +136,14 @@ func CreateDbConnection(config Config) (*Connection, error) {
 	)
 
 	// verify table name is good
-	if err = isTableValid(config.Table); err != nil {
+	/*if err = isTableValid(config.Table); err != nil {
 		return &Connection{}, emperror.WrapWith(err, "Invalid table name", "table", config.Table, "config", config)
-	}
+	}*/
 
 	db := Connection{
 		timeout:      config.ConnectTimeout,
 		numRetries:   config.NumRetries,
 		waitTimeMult: 5,
-		table:        config.Table,
 	}
 
 	// include timeout when connecting
@@ -159,24 +159,18 @@ func CreateDbConnection(config Config) (*Connection, error) {
 	if err != nil {
 		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "server", config.Server)
 	}
-	db.executer = conn
-	db.enquirer = conn
+
+	conn.AutoMigrate(&Record{})
+
+	db.finder = conn
+	db.creator = conn
+	db.deleter = conn
 
 	return &db, nil
 }
 
-func isTableValid(table string) error {
-	if table == "" {
-		return errors.New("table name is empty")
-	}
-	if ok := regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(table); !ok {
-		return errors.New("table contains invalid characters")
-	}
-	return nil
-}
-
-// GetTombstone returns the tombstone (map of events) for a given device.
-func (db *Connection) GetEvents(deviceID string) ([]Record, error) {
+// GetRecords returns a list of records for a given device
+func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
@@ -184,43 +178,28 @@ func (db *Connection) GetEvents(deviceID string) ([]Record, error) {
 		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get tombstone not attempted",
 			"device id", deviceID)
 	}
-	query := "SELECT id, data FROM " + db.table + " WHERE deviceid=$1"
-	rows, err := db.enquirer.query(&deviceInfo, query, deviceID)
+	err := db.finder.find(&deviceInfo, "device_id = ?", deviceID)
 	if err != nil {
 		return []Record{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
 	}
-
-	result := []Record{}
-	defer rows.Close()
-	for rows.Next() {
-		var id int64
-		var data []byte
-		if err := rows.Scan(&id, &data); err != nil {
-			log.Fatal(err)
-		}
-
-		result = append(result, Record{ID: id, Data: data})
-	}
-	return result, nil
+	return deviceInfo, nil
 }
 
-// UpdateHistory updates the history to the list of events given for a given device.
-func (db *Connection) PruneEvents(t time.Time) error {
-	query := "DELETE FROM " + db.table + " WHERE deathdate<$1"
-	err := db.executer.execute(query, t)
+// PruneRecords removes records past their deathdate.
+func (db *Connection) PruneRecords(t time.Time) error {
+	err := db.deleter.delete(&Record{}, "death_date < ?", t)
 	if err != nil {
 		return emperror.WrapWith(err, "Prune events failed", "time", t)
 	}
 	return nil
 }
 
-// InsertEvent adds an event to the history of the given device id and adds it to the tombstone if a key is given.
-func (db *Connection) InsertEvent(record Record) error {
+// InsertEvent adds a record to the table.
+func (db *Connection) InsertRecord(record Record) error {
 	if valid, err := isRecordValid(record); !valid {
 		return emperror.WrapWith(err, "Insert event not attempted", "record", record)
 	}
-	query := "INSERT INTO " + db.table + "(deviceid, birthdate, deathdate, data) VALUES ($1, $2, $3, $4)"
-	err := db.executer.execute(query, record.DeviceID, record.BirthDate, record.DeathDate, record.Data)
+	err := db.creator.create(&record)
 	if err != nil {
 		return emperror.WrapWith(err, "inserting event failed", "record", record)
 	}
@@ -234,10 +213,9 @@ func isRecordValid(record Record) (bool, error) {
 	return true, nil
 }
 
-// RemoveAll removes everything in the database.  Used for testing.
+// RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
-	query := "DELETE FROM " + db.table
-	err := db.executer.execute(query)
+	err := db.deleter.delete(&Record{})
 	if err != nil {
 		return emperror.Wrap(err, "Removing all devices from database failed")
 	}

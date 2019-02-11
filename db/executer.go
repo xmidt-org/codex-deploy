@@ -18,34 +18,45 @@
 package db
 
 import (
-	"database/sql"
 
-	_ "github.com/lib/pq"
+	// Import GORM-related packages.
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type (
-	executer interface {
-		execute(query string, args ...interface{}) error
+	finder interface {
+		find(out interface{}, where ...interface{}) error
 	}
-	enquirer interface {
-		query(obj interface{}, query string, args ...interface{}) (*sql.Rows, error)
+	creator interface {
+		create(value interface{}) error
+	}
+	deleter interface {
+		delete(value interface{}, where ...interface{}) error
 	}
 )
 
 type dbDecorator struct {
-	*sql.DB
+	*gorm.DB
 }
 
-func (b *dbDecorator) execute(query string, args ...interface{}) error {
-	_, err := b.Exec(query, args...)
-	return err
+func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
+	db := b.Find(out, where...)
+	return db.Error
 }
 
-func (b *dbDecorator) query(obj interface{}, query string, args ...interface{}) (*sql.Rows, error) {
-	return b.Query(query, args...)
+func (b *dbDecorator) create(value interface{}) error {
+	db := b.Create(value)
+	return db.Error
+}
+
+func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {
+	db := b.Delete(value, where...)
+	return db.Error
 }
 
 func connect(connSpecStr string) (*dbDecorator, error) {
-	c, err := sql.Open("postgres", connSpecStr)
+	c, err := gorm.Open("postgres", connSpecStr)
 	return &dbDecorator{c}, err
 }

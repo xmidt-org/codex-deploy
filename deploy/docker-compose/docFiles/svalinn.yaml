@@ -35,6 +35,7 @@ insertRetries: 0
 pruneRetries: 0
 getRetries: 0
 retryInterval: 10s
+defaultTTL: 30s
 db:
   server: "db:26257"
   username: "roachadmin"
@@ -47,9 +48,11 @@ regexRules:
   - regex: ".*/online$"
     tombstoneKey: "online"
     storePayload: true
+    ttl: 5m
   - regex: ".*/offline$"
     tombstoneKey: "offline"
     storePayload: true
+    ttl: 0s
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 

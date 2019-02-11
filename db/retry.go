@@ -46,7 +46,7 @@ func execute(config retryConfig, op func() error) error {
 }
 
 type Inserter interface {
-	InsertEvent(record Record) error
+	InsertRecord(record Record) error
 }
 
 type RetryInsertService struct {
@@ -54,9 +54,9 @@ type RetryInsertService struct {
 	config   retryConfig
 }
 
-func (ri RetryInsertService) InsertEvent(record Record) error {
+func (ri RetryInsertService) InsertRecord(record Record) error {
 	return execute(ri.config, func() error {
-		return ri.inserter.InsertEvent(record)
+		return ri.inserter.InsertRecord(record)
 	})
 }
 
@@ -72,7 +72,7 @@ func CreateRetryInsertService(inserter Inserter, retries int, interval time.Dura
 }
 
 type Pruner interface {
-	PruneEvents(t time.Time) error
+	PruneRecords(t time.Time) error
 }
 
 type RetryUpdateService struct {
@@ -80,9 +80,9 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) PruneEvents(t time.Time) error {
+func (ru RetryUpdateService) PruneRecords(t time.Time) error {
 	return execute(ru.config, func() error {
-		return ru.pruner.PruneEvents(t)
+		return ru.pruner.PruneRecords(t)
 	})
 }
 
@@ -98,7 +98,7 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 }
 
 type EventGetter interface {
-	GetEvents(deviceID string) ([]Record, error)
+	GetRecords(deviceID string) ([]Record, error)
 }
 
 type RetryEGService struct {
@@ -108,7 +108,7 @@ type RetryEGService struct {
 	sleep    func(time.Duration)
 }
 
-func (rtg RetryEGService) GetEvents(deviceID string) ([]Record, error) {
+func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
 	var (
 		err    error
 		record []Record
@@ -123,7 +123,7 @@ func (rtg RetryEGService) GetEvents(deviceID string) ([]Record, error) {
 		if i > 0 {
 			rtg.sleep(rtg.interval)
 		}
-		if record, err = rtg.eg.GetEvents(deviceID); err == nil {
+		if record, err = rtg.eg.GetRecords(deviceID); err == nil {
 			break
 		}
 	}
