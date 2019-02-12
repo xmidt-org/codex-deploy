@@ -17,6 +17,7 @@
 
 package db
 
+/*
 import (
 	"encoding/json"
 
@@ -112,3 +113,4 @@ func (ne *mockN1QLExecuter) executeN1qlQuery(q *gocb.N1qlQuery, params interface
 	args := ne.Called(q, params)
 	return args.Error(0)
 }
+*/

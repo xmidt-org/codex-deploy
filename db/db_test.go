@@ -17,18 +17,7 @@
 
 package db
 
-import (
-	"encoding/json"
-	"errors"
-	"testing"
-	"time"
-
-	"gopkg.in/couchbase/gocb.v1"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-)
-
+/*
 var (
 	goodEvent = Event{
 		Source:      "test source",
@@ -512,3 +501,4 @@ func TestRemoveAll(t *testing.T) {
 		})
 	}
 }
+*/
