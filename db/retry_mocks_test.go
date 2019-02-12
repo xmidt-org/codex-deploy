@@ -17,6 +17,7 @@
 
 package db
 
+/*
 import (
 	"github.com/stretchr/testify/mock"
 )
@@ -56,3 +57,4 @@ func (u *mockHG) GetHistory(deviceID string) (History, error) {
 	args := u.Called(deviceID)
 	return args.Get(0).(History), args.Error(1)
 }
+*/

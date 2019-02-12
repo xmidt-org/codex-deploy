@@ -46,7 +46,7 @@ func execute(config retryConfig, op func() error) error {
 }
 
 type Inserter interface {
-	InsertEvent(deviceID string, event Event, tombstoneKey string) error
+	InsertRecord(record Record) error
 }
 
 type RetryInsertService struct {
@@ -54,9 +54,9 @@ type RetryInsertService struct {
 	config   retryConfig
 }
 
-func (ri RetryInsertService) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
+func (ri RetryInsertService) InsertRecord(record Record) error {
 	return execute(ri.config, func() error {
-		return ri.inserter.InsertEvent(deviceID, event, tombstoneKey)
+		return ri.inserter.InsertRecord(record)
 	})
 }
 
@@ -71,24 +71,24 @@ func CreateRetryInsertService(inserter Inserter, retries int, interval time.Dura
 	}
 }
 
-type Updater interface {
-	UpdateHistory(deviceID string, events []Event) error
+type Pruner interface {
+	PruneRecords(t time.Time) error
 }
 
 type RetryUpdateService struct {
-	updater Updater
-	config  retryConfig
+	pruner Pruner
+	config retryConfig
 }
 
-func (ru RetryUpdateService) UpdateHistory(deviceID string, events []Event) error {
+func (ru RetryUpdateService) PruneRecords(t time.Time) error {
 	return execute(ru.config, func() error {
-		return ru.updater.UpdateHistory(deviceID, events)
+		return ru.pruner.PruneRecords(t)
 	})
 }
 
-func CreateRetryUpdateService(updater Updater, retries int, interval time.Duration) RetryUpdateService {
+func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration) RetryUpdateService {
 	return RetryUpdateService{
-		updater: updater,
+		pruner: pruner,
 		config: retryConfig{
 			retries:  retries,
 			interval: interval,
@@ -97,21 +97,21 @@ func CreateRetryUpdateService(updater Updater, retries int, interval time.Durati
 	}
 }
 
-type TombstoneGetter interface {
-	GetTombstone(deviceID string) (map[string]Event, error)
+type EventGetter interface {
+	GetRecords(deviceID string) ([]Record, error)
 }
 
-type RetryTGService struct {
-	tg       TombstoneGetter
+type RetryEGService struct {
+	eg       EventGetter
 	retries  int
 	interval time.Duration
 	sleep    func(time.Duration)
 }
 
-func (rtg RetryTGService) GetTombstone(deviceID string) (map[string]Event, error) {
+func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
 	var (
-		err       error
-		tombstone map[string]Event
+		err    error
+		record []Record
 	)
 
 	retries := rtg.retries
@@ -123,60 +123,17 @@ func (rtg RetryTGService) GetTombstone(deviceID string) (map[string]Event, error
 		if i > 0 {
 			rtg.sleep(rtg.interval)
 		}
-		if tombstone, err = rtg.tg.GetTombstone(deviceID); err == nil {
+		if record, err = rtg.eg.GetRecords(deviceID); err == nil {
 			break
 		}
 	}
 
-	return tombstone, err
+	return record, err
 }
 
-func CreateRetryTGService(tombstoneGetter TombstoneGetter, retries int, interval time.Duration) RetryTGService {
-	return RetryTGService{
-		tg:       tombstoneGetter,
-		retries:  retries,
-		interval: interval,
-		sleep:    time.Sleep,
-	}
-}
-
-type HistoryGetter interface {
-	GetHistory(deviceID string) (History, error)
-}
-
-type RetryHGService struct {
-	hg       HistoryGetter
-	retries  int
-	interval time.Duration
-	sleep    func(time.Duration)
-}
-
-func (rhg RetryHGService) GetHistory(deviceID string) (History, error) {
-	var (
-		err     error
-		history History
-	)
-
-	retries := rhg.retries
-	if retries < 1 {
-		retries = 0
-	}
-
-	for i := 0; i < retries+1; i++ {
-		if i > 0 {
-			rhg.sleep(rhg.interval)
-		}
-		if history, err = rhg.hg.GetHistory(deviceID); err == nil {
-			break
-		}
-	}
-
-	return history, err
-}
-
-func CreateRetryHGService(historyGetter HistoryGetter, retries int, interval time.Duration) RetryHGService {
-	return RetryHGService{
-		hg:       historyGetter,
+func CreateRetryEGService(eventGetter EventGetter, retries int, interval time.Duration) RetryEGService {
+	return RetryEGService{
+		eg:       eventGetter,
 		retries:  retries,
 		interval: interval,
 		sleep:    time.Sleep,

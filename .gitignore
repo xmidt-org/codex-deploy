@@ -13,5 +13,8 @@
 
 *vendor/
 
+# files created by the local docker cockroach dbs
+*cockroach-data/
+
 #Goland
 .idea/
