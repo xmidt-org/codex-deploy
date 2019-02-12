@@ -99,6 +99,7 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 
 type EventGetter interface {
 	GetRecords(deviceID string) ([]Record, error)
+	GetRecordsOfType(deviceID string, eventType int) ([]Record, error)
 }
 
 type RetryEGService struct {
@@ -124,6 +125,29 @@ func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
 			rtg.sleep(rtg.interval)
 		}
 		if record, err = rtg.eg.GetRecords(deviceID); err == nil {
+			break
+		}
+	}
+
+	return record, err
+}
+
+func (rtg RetryEGService) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+	var (
+		err    error
+		record []Record
+	)
+
+	retries := rtg.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			rtg.sleep(rtg.interval)
+		}
+		if record, err = rtg.eg.GetRecordsOfType(deviceID, eventType); err == nil {
 			break
 		}
 	}

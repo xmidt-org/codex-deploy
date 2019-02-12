@@ -27,6 +27,7 @@ import (
 // Interface describes the main functionality needed to connect to a database.
 type Interface interface {
 	GetRecords(deviceID string) ([]Record, error)
+	GetRecordsOfType(deviceID string, eventType int) ([]Record, error)
 	PruneRecords(t time.Time) error
 	InsertRecord(record Record) error
 	RemoveAll() error
@@ -77,7 +78,7 @@ type Event struct {
 	// The id for the event.
 	//
 	// required: true
-	ID int64 `json:"id"`
+	ID int `json:"id"`
 
 	// The time this event was found.
 	//
@@ -116,7 +117,8 @@ type Event struct {
 }
 
 type Record struct {
-	ID        int64     `json:"id" gorm:"AUTO_INCREMENT"`
+	ID        int       `json:"id" gorm:"AUTO_INCREMENT"`
+	Type      int       `json:"type"`
 	DeviceID  string    `json:"deviceid" gorm:"not null"`
 	BirthDate time.Time `json:"birthdate"`
 	DeathDate time.Time `json:"deathdate"`
@@ -179,6 +181,22 @@ func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
 			"device id", deviceID)
 	}
 	err := db.finder.find(&deviceInfo, "device_id = ?", deviceID)
+	if err != nil {
+		return []Record{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
+	}
+	return deviceInfo, nil
+}
+
+// GetRecords returns a list of records for a given device
+func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+	var (
+		deviceInfo []Record
+	)
+	if deviceID == "" {
+		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get tombstone not attempted",
+			"device id", deviceID)
+	}
+	err := db.finder.find(&deviceInfo, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
 		return []Record{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
 	}
