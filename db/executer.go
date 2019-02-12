@@ -42,7 +42,7 @@ type dbDecorator struct {
 }
 
 func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
-	db := b.Find(out, where...)
+	db := b.Order("birth_date DESC").Find(out, where...)
 	return db.Error
 }
 
