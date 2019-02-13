@@ -32,7 +32,7 @@
     server: "db:26257"
     username: "roachadmin"
     database: "devices"
-    table: "events"
     numRetries: 4
-    connectTimeout: 1m
-    opTimeout: 3s
+    waitTimeMult: 5
+    connectTimeout: "60"
+    opTimeout: "100"
