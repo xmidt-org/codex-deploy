@@ -113,10 +113,10 @@ type Event struct {
 
 type Record struct {
 	ID        int       `json:"id" gorm:"AUTO_INCREMENT"`
-	Type      int       `json:"type"`
-	DeviceID  string    `json:"deviceid" gorm:"not null"`
-	BirthDate time.Time `json:"birthdate"`
-	DeathDate time.Time `json:"deathdate"`
+	Type      int       `json:"type" gorm:"index"`
+	DeviceID  string    `json:"deviceid" gorm:"not null;index"`
+	BirthDate time.Time `json:"birthdate" gorm:"index"`
+	DeathDate time.Time `json:"deathdate" gorm:"index"`
 	Data      []byte    `json:"data" gorm:"not null"`
 }
 
