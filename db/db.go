@@ -54,18 +54,13 @@ type Config struct {
 	SSLKey         string
 	SSLCert        string
 	NumRetries     int
-	ConnectTimeout time.Duration
-	OpTimeout      time.Duration
+	WaitTimeMult   time.Duration
+	ConnectTimeout string
+	OpTimeout      string
 }
 
 // Connection contains the tools to edit the database.
 type Connection struct {
-	// Number of times to try when  connecting to the database
-	numRetries int
-	// Multiplier of the wait time so that we can wait longer after each failure
-	waitTimeMult time.Duration
-	// The time duration to add when creating TTLs for history documents
-	timeout time.Duration
 	finder  finder
 	creator creator
 	deleter deleter
@@ -133,33 +128,38 @@ func (Record) TableName() string {
 // CreateDbConnection creates db connection and returns the struct to the consumer.
 func CreateDbConnection(config Config) (*Connection, error) {
 	var (
-		conn *dbDecorator
-		err  error
+		conn          *dbDecorator
+		err           error
+		connectionURL string
 	)
 
-	// verify table name is good
-	/*if err = isTableValid(config.Table); err != nil {
-		return &Connection{}, emperror.WrapWith(err, "Invalid table name", "table", config.Table, "config", config)
-	}*/
-
-	db := Connection{
-		timeout:      config.ConnectTimeout,
-		numRetries:   config.NumRetries,
-		waitTimeMult: 5,
-	}
+	db := Connection{}
 
 	// include timeout when connecting
 	// if missing a cert, connect insecurely
 	if config.SSLCert == "" || config.SSLKey == "" || config.SSLRootCert == "" {
-		conn, err = connect("postgresql://" + config.Username + "@" + config.Server + "/" +
-			config.Database + "?sslmode=disable")
+		connectionURL = "postgresql://" + config.Username + "@" + config.Server + "/" +
+			config.Database + "?sslmode=disable&connect_timeout=" + config.ConnectTimeout +
+			"&statement_timeout=" + config.OpTimeout
 	} else {
-		conn, err = connect("postgresql://" + config.Username + "@" + config.Server + "/" +
-			config.Database + "?ssl=true&sslmode=require&sslrootcert=" + config.SSLRootCert +
-			"&sslkey=" + config.SSLKey + "&sslcert=" + config.SSLCert)
+		connectionURL = "postgresql://" + config.Username + "@" + config.Server + "/" +
+			config.Database + "?ssl=true&sslmode=verify-full&sslrootcert=" + config.SSLRootCert +
+			"&sslkey=" + config.SSLKey + "&sslcert=" + config.SSLCert + "&connect_timeout=" +
+			config.ConnectTimeout + "&statement_timeout=" + config.OpTimeout
 	}
+
+	conn, err = connect(connectionURL)
+
+	// retry if it fails
+	waitTime := 1 * time.Second
+	for attempt := 0; attempt < config.NumRetries && err != nil; attempt++ {
+		time.Sleep(waitTime)
+		conn, err = connect(connectionURL)
+		waitTime = waitTime * config.WaitTimeMult
+	}
+
 	if err != nil {
-		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "server", config.Server)
+		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "connection url", connectionURL)
 	}
 
 	conn.AutoMigrate(&Record{})
