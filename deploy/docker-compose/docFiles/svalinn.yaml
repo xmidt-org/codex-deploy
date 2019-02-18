@@ -63,7 +63,7 @@ webhook:
   registrationInterval: "4m"
   url: "http://host.docker.internal:8181/api/v1/device-status"
   timeout: "1m"
-  registrationURL: "http://127.0.0.1:6000/hook"
+  registrationURL: "https://127.0.0.1:6000/hook"
   client: ""
   secret: ""
   satURL: ""
