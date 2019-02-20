@@ -24,25 +24,9 @@ import (
 	"github.com/goph/emperror"
 )
 
-// Interface describes the main functionality needed to connect to a database.
-type Interface interface {
-	GetRecords(deviceID string) ([]Record, error)
-	GetRecordsOfType(deviceID string, eventType int) ([]Record, error)
-	PruneRecords(t time.Time) error
-	InsertRecord(record Record) error
-	RemoveAll() error
-}
-
-// These constants are prefixes for the different documents being stored in couchbase.
-const (
-	historyDoc   = "history"
-	counterDoc   = "counter"
-	tombstoneDoc = "tombstone"
-)
-
 var (
-	errInvaliddeviceID = errors.New("Invalid device ID")
-	errInvalidEvent    = errors.New("Invalid event")
+	errInvaliddeviceID  = errors.New("Invalid device ID")
+	errInvalidEventType = errors.New("Invalid event type")
 )
 
 // Config contains the initial configuration information needed to create a db connection.
@@ -120,7 +104,7 @@ type Record struct {
 	Data      []byte    `json:"data" gorm:"not null"`
 }
 
-// set User's table name to be `profiles`
+// set Record's table name to be `events`
 func (Record) TableName() string {
 	return "events"
 }
@@ -159,7 +143,7 @@ func CreateDbConnection(config Config) (*Connection, error) {
 	}
 
 	if err != nil {
-		return &Connection{}, emperror.WrapWith(err, "Connecting to couchbase failed", "connection url", connectionURL)
+		return &Connection{}, emperror.WrapWith(err, "Connecting to database failed", "connection url", connectionURL)
 	}
 
 	conn.AutoMigrate(&Record{})
@@ -177,12 +161,12 @@ func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
 		deviceInfo []Record
 	)
 	if deviceID == "" {
-		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get tombstone not attempted",
+		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get records not attempted",
 			"device id", deviceID)
 	}
 	err := db.finder.find(&deviceInfo, "device_id = ?", deviceID)
 	if err != nil {
-		return []Record{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
+		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
 	return deviceInfo, nil
 }
@@ -192,13 +176,16 @@ func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record
 	var (
 		deviceInfo []Record
 	)
+	if eventType < 0 {
+		return []Record{}, emperror.WrapWith(errInvalidEventType, "Get records not attempted", "event type", eventType)
+	}
 	if deviceID == "" {
-		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get tombstone not attempted",
+		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get records not attempted",
 			"device id", deviceID)
 	}
 	err := db.finder.find(&deviceInfo, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
-		return []Record{}, emperror.WrapWith(err, "Getting tombstone from database failed", "device id", deviceID)
+		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
 	return deviceInfo, nil
 }
@@ -207,7 +194,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record
 func (db *Connection) PruneRecords(t time.Time) error {
 	err := db.deleter.delete(&Record{}, "death_date < ?", t)
 	if err != nil {
-		return emperror.WrapWith(err, "Prune events failed", "time", t)
+		return emperror.WrapWith(err, "Prune records failed", "time", t)
 	}
 	return nil
 }
@@ -215,11 +202,11 @@ func (db *Connection) PruneRecords(t time.Time) error {
 // InsertEvent adds a record to the table.
 func (db *Connection) InsertRecord(record Record) error {
 	if valid, err := isRecordValid(record); !valid {
-		return emperror.WrapWith(err, "Insert event not attempted", "record", record)
+		return emperror.WrapWith(err, "Insert record not attempted", "record", record)
 	}
 	err := db.creator.create(&record)
 	if err != nil {
-		return emperror.WrapWith(err, "inserting event failed", "record", record)
+		return emperror.WrapWith(err, "Inserting record failed", "record", record)
 	}
 	return err
 }
@@ -235,7 +222,7 @@ func isRecordValid(record Record) (bool, error) {
 func (db *Connection) RemoveAll() error {
 	err := db.deleter.delete(&Record{})
 	if err != nil {
-		return emperror.Wrap(err, "Removing all devices from database failed")
+		return emperror.Wrap(err, "Removing all records from database failed")
 	}
 	return nil
 }

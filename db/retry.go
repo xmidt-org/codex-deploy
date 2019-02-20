@@ -97,19 +97,19 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 	}
 }
 
-type EventGetter interface {
+type RecordGetter interface {
 	GetRecords(deviceID string) ([]Record, error)
 	GetRecordsOfType(deviceID string, eventType int) ([]Record, error)
 }
 
-type RetryEGService struct {
-	eg       EventGetter
+type RetryRGService struct {
+	rg       RecordGetter
 	retries  int
 	interval time.Duration
 	sleep    func(time.Duration)
 }
 
-func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
+func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
 	var (
 		err    error
 		record []Record
@@ -124,7 +124,7 @@ func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
 		if i > 0 {
 			rtg.sleep(rtg.interval)
 		}
-		if record, err = rtg.eg.GetRecords(deviceID); err == nil {
+		if record, err = rtg.rg.GetRecords(deviceID); err == nil {
 			break
 		}
 	}
@@ -132,7 +132,7 @@ func (rtg RetryEGService) GetRecords(deviceID string) ([]Record, error) {
 	return record, err
 }
 
-func (rtg RetryEGService) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+func (rtg RetryRGService) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
 	var (
 		err    error
 		record []Record
@@ -147,7 +147,7 @@ func (rtg RetryEGService) GetRecordsOfType(deviceID string, eventType int) ([]Re
 		if i > 0 {
 			rtg.sleep(rtg.interval)
 		}
-		if record, err = rtg.eg.GetRecordsOfType(deviceID, eventType); err == nil {
+		if record, err = rtg.rg.GetRecordsOfType(deviceID, eventType); err == nil {
 			break
 		}
 	}
@@ -155,9 +155,9 @@ func (rtg RetryEGService) GetRecordsOfType(deviceID string, eventType int) ([]Re
 	return record, err
 }
 
-func CreateRetryEGService(eventGetter EventGetter, retries int, interval time.Duration) RetryEGService {
-	return RetryEGService{
-		eg:       eventGetter,
+func CreateRetryRGService(recordGetter RecordGetter, retries int, interval time.Duration) RetryRGService {
+	return RetryRGService{
+		rg:       recordGetter,
 		retries:  retries,
 		interval: interval,
 		sleep:    time.Sleep,
