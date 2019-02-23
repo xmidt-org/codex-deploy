@@ -21,6 +21,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/go-kit/kit/metrics/provider"
 	"github.com/goph/emperror"
 )
 
@@ -41,6 +42,14 @@ type Config struct {
 	WaitTimeMult   time.Duration
 	ConnectTimeout string
 	OpTimeout      string
+
+	// MaxIdleConns sets the max idle connections, the min value is 2
+	MaxIdleConns int
+
+	// MaxOpenConns sets the max open connections, to specify unlimited set to 0
+	MaxOpenConns int
+
+	PingInterval time.Duration
 }
 
 // Connection contains the tools to edit the database.
@@ -110,7 +119,7 @@ func (Record) TableName() string {
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
-func CreateDbConnection(config Config) (*Connection, error) {
+func CreateDbConnection(config Config, provider provider.Provider) (*Connection, error) {
 	var (
 		conn          *dbDecorator
 		err           error
@@ -132,13 +141,13 @@ func CreateDbConnection(config Config) (*Connection, error) {
 			config.ConnectTimeout + "&statement_timeout=" + config.OpTimeout
 	}
 
-	conn, err = connect(connectionURL)
+	conn, err = connect(connectionURL, config.MaxIdleConns, config.MaxOpenConns, NewMeasures(provider))
 
 	// retry if it fails
 	waitTime := 1 * time.Second
 	for attempt := 0; attempt < config.NumRetries && err != nil; attempt++ {
 		time.Sleep(waitTime)
-		conn, err = connect(connectionURL)
+		conn, err = connect(connectionURL, config.MaxIdleConns, config.MaxOpenConns, NewMeasures(provider))
 		waitTime = waitTime * config.WaitTimeMult
 	}
 

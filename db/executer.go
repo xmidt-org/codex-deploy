@@ -18,11 +18,11 @@
 package db
 
 import (
-
 	// Import GORM-related packages.
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"time"
 )
 
 type (
@@ -39,6 +39,7 @@ type (
 
 type dbDecorator struct {
 	*gorm.DB
+	measures Measures
 }
 
 func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
@@ -56,7 +57,55 @@ func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {
 	return db.Error
 }
 
-func connect(connSpecStr string) (*dbDecorator, error) {
+func connect(connSpecStr string, maxIdleConns int, maxOpenCons int, measures Measures) (*dbDecorator, error) {
 	c, err := gorm.Open("postgres", connSpecStr)
-	return &dbDecorator{c}, err
+
+	if err == nil && c != nil {
+		if maxIdleConns < 2 {
+			maxIdleConns = 2
+		}
+		c.DB().SetMaxIdleConns(maxIdleConns)
+		c.DB().SetMaxOpenConns(maxOpenCons)
+
+		// ping to check status
+		doEvery(time.Second, func() {
+			err := c.DB().Ping()
+			if err != nil {
+				measures.ConnectionStatus.Set(0.0)
+			} else {
+				measures.ConnectionStatus.Set(1.0)
+			}
+		})
+
+		// baseline
+		startStats := c.DB().Stats()
+		prevWaitCount := startStats.WaitCount
+		prevWaitDuration := startStats.WaitDuration.Nanoseconds()
+		prevMaxIdleClosed := startStats.MaxIdleClosed
+		prevMaxLifetimeClosed := startStats.MaxLifetimeClosed
+
+		// update measurements
+		doEvery(time.Second, func() {
+			stats := c.DB().Stats()
+
+			// current connections
+			measures.PoolOpenConnections.Set(float64(stats.OpenConnections))
+			measures.PoolInUseConnections.Set(float64(stats.InUse))
+			measures.PoolIdleConnections.Set(float64(stats.Idle))
+
+			// Counters
+			measures.SQLWaitCount.Add(float64(stats.WaitCount - prevWaitCount))
+			measures.SQLWaitDuration.Add(float64(stats.WaitDuration.Nanoseconds() - prevWaitDuration))
+			measures.SQLMaxIdleClosed.Add(float64(stats.MaxIdleClosed - prevMaxIdleClosed))
+			measures.SQLMaxLifetimeClosed.Add(float64(stats.MaxLifetimeClosed - prevMaxLifetimeClosed))
+		})
+	}
+
+	return &dbDecorator{c, measures}, err
+}
+
+func doEvery(d time.Duration, f func()) {
+	for range time.Tick(d) {
+		f()
+	}
 }
