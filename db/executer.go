@@ -59,7 +59,6 @@ func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {
 
 func connect(connSpecStr string, maxIdleConns int, maxOpenCons int, measures Measures) (*dbDecorator, error) {
 	c, err := gorm.Open("postgres", connSpecStr)
-
 	if err == nil && c != nil {
 		if maxIdleConns < 2 {
 			maxIdleConns = 2
@@ -68,7 +67,7 @@ func connect(connSpecStr string, maxIdleConns int, maxOpenCons int, measures Mea
 		c.DB().SetMaxOpenConns(maxOpenCons)
 
 		// ping to check status
-		doEvery(time.Second, func() {
+		go doEvery(time.Second, func() {
 			err := c.DB().Ping()
 			if err != nil {
 				measures.ConnectionStatus.Set(0.0)
@@ -85,7 +84,7 @@ func connect(connSpecStr string, maxIdleConns int, maxOpenCons int, measures Mea
 		prevMaxLifetimeClosed := startStats.MaxLifetimeClosed
 
 		// update measurements
-		doEvery(time.Second, func() {
+		go doEvery(time.Second, func() {
 			stats := c.DB().Stats()
 
 			// current connections
@@ -100,7 +99,6 @@ func connect(connSpecStr string, maxIdleConns int, maxOpenCons int, measures Mea
 			measures.SQLMaxLifetimeClosed.Add(float64(stats.MaxLifetimeClosed - prevMaxLifetimeClosed))
 		})
 	}
-
 	return &dbDecorator{c, measures}, err
 }
 
