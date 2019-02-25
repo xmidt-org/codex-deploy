@@ -51,21 +51,21 @@ type Interface interface {
 type Crypt interface {
 	// EncryptMessage attempts to encode the message into an array of bytes.
 	// and error will be returned if failed to encode the message.
-	EncryptMessage(message string) ([]byte, error)
+	EncryptMessage(message []byte) ([]byte, error)
 
 	// DecryptMessage attempts to decode the message into a string.
 	// and error will be returned if failed to decode the message.
-	DecryptMessage(cipher []byte) (string, error)
+	DecryptMessage(cipher []byte) ([]byte, error)
 }
 
 // Verify is used to sign and verify the signature of a message
 type Verify interface {
 	// Sign attempts to sign the message into an array of bytes
 	// and an error will be returned if a failure is encountered while signing the message.
-	Sign(message string) ([]byte, error)
+	Sign(message []byte) ([]byte, error)
 
 	// VerifyMessage will return true if the message was successfully verified
-	VerifyMessage(message string, signature []byte) bool
+	VerifyMessage(message []byte, signature []byte) bool
 }
 
 // GeneratePrivateKey will create a private key with the size given
@@ -85,19 +85,19 @@ func GeneratePrivateKey(size int) *rsa.PrivateKey {
 // NOOP will just convert the string to an array of Bytes
 type NOOP struct{}
 
-func (noop *NOOP) EncryptMessage(message string) ([]byte, error) {
+func (noop *NOOP) EncryptMessage(message []byte) ([]byte, error) {
 	return []byte(message), nil
 }
 
-func (noop *NOOP) DecryptMessage(cipher []byte) (string, error) {
-	return string(cipher), nil
+func (noop *NOOP) DecryptMessage(cipher []byte) ([]byte, error) {
+	return cipher, nil
 }
 
-func (noop *NOOP) Sign(message string) ([]byte, error) {
-	return []byte(message), nil
+func (noop *NOOP) Sign(message []byte) ([]byte, error) {
+	return message, nil
 }
-func (noop *NOOP) VerifyMessage(message string, signature []byte) bool {
-	return message == string(signature)
+func (noop *NOOP) VerifyMessage(message []byte, signature []byte) bool {
+	return len(message) == len(signature)
 }
 
 type crypter struct {
@@ -115,12 +115,12 @@ func NewCrypter(hash crypto.Hash, key *rsa.PrivateKey) Interface {
 	}
 }
 
-func (c *crypter) EncryptMessage(message string) ([]byte, error) {
+func (c *crypter) EncryptMessage(message []byte) ([]byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
 		c.publicKey,
-		[]byte(message),
+		message,
 		c.label,
 	)
 	if err != nil {
@@ -130,7 +130,7 @@ func (c *crypter) EncryptMessage(message string) ([]byte, error) {
 	return cipherdata, nil
 }
 
-func (c *crypter) DecryptMessage(cipher []byte) (string, error) {
+func (c *crypter) DecryptMessage(cipher []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
@@ -139,17 +139,17 @@ func (c *crypter) DecryptMessage(cipher []byte) (string, error) {
 		c.label,
 	)
 	if err != nil {
-		return "", emperror.WrapWith(err, "failed to decrypt message")
+		return []byte{}, emperror.WrapWith(err, "failed to decrypt message")
 	}
-	return string(decrypted), nil
+	return decrypted, nil
 }
 
-func (c *crypter) Sign(message string) ([]byte, error) {
+func (c *crypter) Sign(message []byte) ([]byte, error) {
 	var opts rsa.PSSOptions
 	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
 
 	pssh := c.hasher.New()
-	pssh.Write([]byte(message))
+	pssh.Write(message)
 	hashed := pssh.Sum(nil)
 
 	signature, err := rsa.SignPSS(rand.Reader, c.privateKey, c.hasher, hashed, &opts)
@@ -159,12 +159,12 @@ func (c *crypter) Sign(message string) ([]byte, error) {
 
 	return signature, nil
 }
-func (c *crypter) VerifyMessage(message string, signature []byte) bool {
+func (c *crypter) VerifyMessage(message []byte, signature []byte) bool {
 	var opts rsa.PSSOptions
 	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
 
 	pssh := c.hasher.New()
-	pssh.Write([]byte(message))
+	pssh.Write(message)
 	hashed := pssh.Sum(nil)
 
 	err := rsa.VerifyPSS(c.publicKey, c.hasher, hashed, signature, &opts)

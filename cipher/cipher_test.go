@@ -32,7 +32,7 @@ func TestBasicEncrypt(t *testing.T) {
 	crypter := NewCrypter(crypto.BLAKE2b_512, key)
 	assert.NotEmpty(crypter)
 
-	message := "Hello World"
+	message := []byte("Hello World")
 
 	encodedMSG, err := crypter.EncryptMessage(message)
 	assert.NoError(err)
@@ -52,7 +52,7 @@ func TestLargeKey(t *testing.T) {
 	crypter := NewCrypter(crypto.SHA1, key)
 	assert.NotEmpty(crypter)
 
-	message := "Hello World"
+	message := []byte("Hello World")
 
 	_, err := crypter.EncryptMessage(message)
 	assert.Error(err)
@@ -67,7 +67,7 @@ func TestSmallKey(t *testing.T) {
 	crypter := NewCrypter(crypto.SHA512, key)
 	assert.NotEmpty(crypter)
 
-	message := "Hello World"
+	message := []byte("Hello World")
 
 	_, err := crypter.EncryptMessage(message)
 	assert.Error(err)
@@ -114,7 +114,7 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 
 	for index, item := range data {
 		// Encode Message
-		encodedMSG, err := crypter.EncryptMessage(item.message)
+		encodedMSG, err := crypter.EncryptMessage([]byte(item.message))
 		if err != nil && item.expectedErr {
 			assert.Empty(encodedMSG)
 			assert.Contains(err.Error(), "too long for RSA public key size")
@@ -125,7 +125,7 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 		encodedMSGS[index] = encodedMSG
 
 		// Sign Message
-		signature, err := crypter.Sign(item.message)
+		signature, err := crypter.Sign([]byte(item.message))
 		assert.NoError(err)
 		assert.NotEmpty(signature)
 		signatures[index] = signature
@@ -139,7 +139,7 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 		// Decode Message
 		msg, err := crypter.DecryptMessage(encodedMSG)
 		assert.NoError(err)
-		assert.Equal(data[index].message, msg)
+		assert.Equal([]byte(data[index].message), msg)
 
 		// Verify Message
 		verified := crypter.VerifyMessage(msg, signatures[index])
