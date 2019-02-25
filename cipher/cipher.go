@@ -82,11 +82,11 @@ func GeneratePrivateKey(size int) *rsa.PrivateKey {
 	return privateKey
 }
 
-// NOOP will just convert the string to an array of Bytes
+// NOOP will just return the message
 type NOOP struct{}
 
 func (noop *NOOP) EncryptMessage(message []byte) ([]byte, error) {
-	return []byte(message), nil
+	return message, nil
 }
 
 func (noop *NOOP) DecryptMessage(cipher []byte) ([]byte, error) {
@@ -96,8 +96,23 @@ func (noop *NOOP) DecryptMessage(cipher []byte) ([]byte, error) {
 func (noop *NOOP) Sign(message []byte) ([]byte, error) {
 	return message, nil
 }
+
 func (noop *NOOP) VerifyMessage(message []byte, signature []byte) bool {
-	return len(message) == len(signature)
+	if (message == nil) != (signature == nil) {
+		return false
+	}
+
+	if len(message) != len(signature) {
+		return false
+	}
+
+	for i := range message {
+		if message[i] != signature[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 type crypter struct {
@@ -124,7 +139,7 @@ func (c *crypter) EncryptMessage(message []byte) ([]byte, error) {
 		c.label,
 	)
 	if err != nil {
-		return []byte(""), emperror.WrapWith(err, "failed to encrypt message")
+		return []byte(""), emperror.Wrap(err, "failed to encrypt message")
 	}
 
 	return cipherdata, nil
@@ -139,7 +154,7 @@ func (c *crypter) DecryptMessage(cipher []byte) ([]byte, error) {
 		c.label,
 	)
 	if err != nil {
-		return []byte{}, emperror.WrapWith(err, "failed to decrypt message")
+		return []byte{}, emperror.Wrap(err, "failed to decrypt message")
 	}
 	return decrypted, nil
 }
@@ -154,7 +169,7 @@ func (c *crypter) Sign(message []byte) ([]byte, error) {
 
 	signature, err := rsa.SignPSS(rand.Reader, c.privateKey, c.hasher, hashed, &opts)
 	if err != nil {
-		return []byte{}, emperror.WrapWith(err, "failed to sign message")
+		return []byte{}, emperror.Wrap(err, "failed to sign message")
 	}
 
 	return signature, nil
