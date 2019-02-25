@@ -21,7 +21,6 @@ import (
 	"testing"
 )
 
-
 func TestMetrics(t *testing.T) {
 	assert := assert.New(t)
 

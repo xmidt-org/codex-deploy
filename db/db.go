@@ -57,6 +57,7 @@ type Connection struct {
 	finder  finder
 	creator creator
 	deleter deleter
+	closer  closer
 }
 
 // Event represents the event information in the database.  It has no TTL.
@@ -160,6 +161,7 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 	db.finder = conn
 	db.creator = conn
 	db.deleter = conn
+	db.closer = conn
 
 	return &db, nil
 }
@@ -218,6 +220,14 @@ func (db *Connection) InsertRecord(record Record) error {
 		return emperror.WrapWith(err, "Inserting record failed", "record", record)
 	}
 	return err
+}
+
+func (db *Connection) Close() error {
+	err := db.closer.close()
+	if err != nil {
+		return emperror.WrapWith(err, "Closing connection failed")
+	}
+	return nil
 }
 
 func isRecordValid(record Record) (bool, error) {
