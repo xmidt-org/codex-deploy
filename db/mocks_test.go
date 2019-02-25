@@ -62,3 +62,12 @@ func (d *mockCloser) close() error {
 	args := d.Called()
 	return args.Error(0)
 }
+
+type mockPing struct {
+	mock.Mock
+}
+
+func (d *mockPing) ping() error {
+	args := d.Called()
+	return args.Error(0)
+}

@@ -326,3 +326,36 @@ func TestClose(t *testing.T) {
 		})
 	}
 }
+
+func TestPing(t *testing.T) {
+	tests := []struct {
+		description string
+		expectedErr error
+	}{
+		{
+			description: "Success",
+			expectedErr: nil,
+		},
+		{
+			description: "Ping Error",
+			expectedErr: errors.New("test ping error"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
+			mockObj := new(mockPing)
+			dbConnection := Connection{
+				pinger: mockObj,
+			}
+			mockObj.On("ping").Return(tc.expectedErr).Once()
+			err := dbConnection.Ping()
+			mockObj.AssertExpectations(t)
+			if tc.expectedErr == nil || err == nil {
+				assert.Equal(tc.expectedErr, err)
+			} else {
+				assert.Contains(err.Error(), tc.expectedErr.Error())
+			}
+		})
+	}
+}
