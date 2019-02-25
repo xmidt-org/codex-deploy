@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - Fixed `db` package mocks and unit tests to match cockroachdb code
  - Fixed `db` package error statements to be more accurate
  - Adding metrics to `db` package
+ - Added _ping_ and _close_ to `db` package
 
 ## [v0.1.5]
  - Added event type to record in `db` package
