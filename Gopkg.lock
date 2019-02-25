@@ -3,11 +3,14 @@
 
 [[projects]]
   branch = "feature/additional-server-configuration"
-  digest = "1:a34e02d4a8ac279da8d5db55729cba026a06683e9106d9250100fde5dab2ec85"
+  digest = "1:9136b11ec39dac633dffdd915ee3e84e08ec170aee3cfb740d9e780aa7612017"
   name = "github.com/Comcast/webpa-common"
-  packages = ["xmetrics"]
+  packages = [
+    "logging",
+    "xmetrics",
+  ]
   pruneopts = "UT"
-  revision = "aa01ab0b64b15078c66056ee143763226401bbb9"
+  revision = "2f771f75ee45ab67d325b952e59d35ec841e2b27"
 
 [[projects]]
   digest = "1:276b1553a866a15eeb3817f8689b51b69f1903a38ad7692bb369ff5b1e171910"
