@@ -308,6 +308,22 @@ func isRecordValid(record Record) (bool, error) {
 	return true, nil
 }
 
+func doEvery(d time.Duration, f func()) chan struct{} {
+	ticker := time.NewTicker(d)
+	stop := make(chan struct{}, 1)
+	go func(stop chan struct{}) {
+		for {
+			select {
+			case <-ticker.C:
+				f()
+			case <-stop:
+				return
+			}
+		}
+	}(stop)
+	return stop
+}
+
 // RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
 	err := db.deleter.delete(&Record{})

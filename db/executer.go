@@ -23,7 +23,6 @@ import (
 	"database/sql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"time"
 )
 
 type (
@@ -88,20 +87,4 @@ func connect(connSpecStr string) (*dbDecorator, error) {
 	db := &dbDecorator{c}
 
 	return db, nil
-}
-
-func doEvery(d time.Duration, f func()) chan struct{} {
-	ticker := time.NewTicker(d)
-	stop := make(chan struct{}, 1)
-	go func(stop chan struct{}) {
-		for {
-			select {
-			case <-ticker.C:
-				f()
-			case <-stop:
-				return
-			}
-		}
-	}(stop)
-	return stop
 }
