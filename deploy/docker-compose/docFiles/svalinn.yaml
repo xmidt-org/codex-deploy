@@ -31,31 +31,39 @@ queueSize: 3000
 stateLimitPerDevice: 3
 metadataMaxSize: 1000
 payloadMaxSize: 1000
-insertRetries: 3
-pruneRetries: 3
-getRetries: 3
+insertRetries: 0
+pruneRetries: 0
+getRetries: 0
 retryInterval: 10s
+defaultTTL: 1h
 db:
-  server: "db:11210"
-  username: "Administrator"
-  password: "somepassword"
-  bucket: "devices"
+  server: "db:26257"
+  username: "roachadmin"
+  database: "devices"
   numRetries: 4
-  connectTimeout: 1m
-  opTimeout: 3s
+  waitTimeMult: 5
+  connectTimeout: "60"
+  opTimeout: "100"
 regexRules:
   - regex: ".*/online$"
     tombstoneKey: "online"
     storePayload: true
+    ruleTTL: 50h
+    eventType: "state"
   - regex: ".*/offline$"
     tombstoneKey: "offline"
     storePayload: true
+    ruleTTL: 50h
+    eventType: "state"
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
 webhook:
-  secret: "Basic YXV0aEhlYWRlcg=="
+  caduceusSecret: "super secret"
   registrationInterval: "4m"
   url: "http://host.docker.internal:8181/api/v1/device-status"
   timeout: "1m"
-  registrationURL: "http://127.0.0.1:6000/hook"
+  registrationURL: "https://127.0.0.1:6000/hook"
+  client: ""
+  secret: ""
+  satURL: ""

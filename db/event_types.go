@@ -17,31 +17,35 @@
 
 package db
 
-import (
-	"gopkg.in/couchbase/gocb.v1"
+const (
+	// default event type
+	EventDefault = iota
+
+	// event type for online and offline events
+	EventState
 )
 
-type (
-	cluster interface {
-		authenticate(gocb.Authenticator) error
-		openBucket(bucket string) (*bucketDecorator, error)
+var (
+	eventMarshal = map[int]string{
+		EventDefault: "default",
+		EventState:   "state",
+	}
+	eventUnmarshal = map[string]int{
+		"default": EventDefault,
+		"state":   EventState,
 	}
 )
 
-type clusterDecorator struct {
-	*gocb.Cluster
+func MarshalEvent(event int) string {
+	if value, ok := eventMarshal[event]; ok {
+		return value
+	}
+	return eventMarshal[EventDefault]
 }
 
-func (c *clusterDecorator) authenticate(auth gocb.Authenticator) error {
-	return c.Authenticate(auth)
-}
-
-func (c *clusterDecorator) openBucket(bucket string) (*bucketDecorator, error) {
-	b, err := c.OpenBucket(bucket, "")
-	return &bucketDecorator{b}, err
-}
-
-func connect(connSpecStr string) (cluster, error) {
-	c, err := gocb.Connect(connSpecStr)
-	return &clusterDecorator{c}, err
+func UnmarshalEvent(event string) int {
+	if value, ok := eventUnmarshal[event]; ok {
+		return value
+	}
+	return EventDefault
 }

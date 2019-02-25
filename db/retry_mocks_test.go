@@ -18,6 +18,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -25,34 +27,30 @@ type mockInserter struct {
 	mock.Mock
 }
 
-func (i *mockInserter) InsertEvent(deviceID string, event Event, tombstoneKey string) error {
-	args := i.Called(deviceID, event, tombstoneKey)
+func (i *mockInserter) InsertRecord(record Record) error {
+	args := i.Called(record)
 	return args.Error(0)
 }
 
-type mockUpdater struct {
+type mockPruner struct {
 	mock.Mock
 }
 
-func (u *mockUpdater) UpdateHistory(deviceID string, events []Event) error {
-	args := u.Called(deviceID, events)
+func (p *mockPruner) PruneRecords(t time.Time) error {
+	args := p.Called(t)
 	return args.Error(0)
 }
 
-type mockTG struct {
+type mockRG struct {
 	mock.Mock
 }
 
-func (u *mockTG) GetTombstone(deviceID string) (map[string]Event, error) {
-	args := u.Called(deviceID)
-	return args.Get(0).(map[string]Event), args.Error(1)
+func (rg *mockRG) GetRecords(deviceID string) ([]Record, error) {
+	args := rg.Called(deviceID)
+	return args.Get(0).([]Record), args.Error(1)
 }
 
-type mockHG struct {
-	mock.Mock
-}
-
-func (u *mockHG) GetHistory(deviceID string) (History, error) {
-	args := u.Called(deviceID)
-	return args.Get(0).(History), args.Error(1)
+func (rg *mockRG) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+	args := rg.Called(deviceID, eventType)
+	return args.Get(0).([]Record), args.Error(1)
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestRetryInsertEvent(t *testing.T) {
+func TestRetryInsertRecord(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
@@ -71,10 +71,10 @@ func TestRetryInsertEvent(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockInserter)
 			if tc.numCalls > 1 {
-				mockObj.On("InsertEvent", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
+				mockObj.On("InsertRecord", mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("InsertEvent", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
+				mockObj.On("InsertRecord", mock.Anything).Return(tc.finalError).Once()
 			}
 
 			retryInsertService := RetryInsertService{
@@ -87,7 +87,7 @@ func TestRetryInsertEvent(t *testing.T) {
 					},
 				},
 			}
-			err := retryInsertService.InsertEvent("", Event{}, "")
+			err := retryInsertService.InsertRecord(Record{})
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -113,7 +113,7 @@ func TestCreateRetryInsertService(t *testing.T) {
 	assert.Equal(r.config.interval, newService.config.interval)
 }
 
-func TestRetryUpdateHistory(t *testing.T) {
+func TestRetryPruneRecords(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
@@ -156,16 +156,16 @@ func TestRetryUpdateHistory(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
-			mockObj := new(mockUpdater)
+			mockObj := new(mockPruner)
 			if tc.numCalls > 1 {
-				mockObj.On("UpdateHistory", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
+				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("UpdateHistory", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
+				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
 			}
 
 			retryInsertService := RetryUpdateService{
-				updater: mockObj,
+				pruner: mockObj,
 				config: retryConfig{
 					retries:  tc.retries,
 					interval: interval,
@@ -174,7 +174,7 @@ func TestRetryUpdateHistory(t *testing.T) {
 					},
 				},
 			}
-			err := retryInsertService.UpdateHistory("", []Event{})
+			err := retryInsertService.PruneRecords(time.Now())
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -188,20 +188,20 @@ func TestRetryUpdateHistory(t *testing.T) {
 
 func TestCreateRetryUpdateService(t *testing.T) {
 	r := RetryUpdateService{
-		updater: new(mockUpdater),
+		pruner: new(mockPruner),
 		config: retryConfig{
 			retries:  322,
 			interval: 2 * time.Minute,
 		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryUpdateService(r.updater, r.config.retries, r.config.interval)
-	assert.Equal(r.updater, newService.updater)
+	newService := CreateRetryUpdateService(r.pruner, r.config.retries, r.config.interval)
+	assert.Equal(r.pruner, newService.pruner)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
 }
 
-func TestRetryGetTombstone(t *testing.T) {
+func TestRetryGetRecords(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
@@ -244,23 +244,23 @@ func TestRetryGetTombstone(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
-			mockObj := new(mockTG)
+			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetTombstone", mock.Anything, mock.Anything, mock.Anything).Return(map[string]Event{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecords", mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetTombstone", mock.Anything, mock.Anything, mock.Anything).Return(map[string]Event{}, tc.finalError).Once()
+				mockObj.On("GetRecords", mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
 
-			retryTGService := RetryTGService{
-				tg:       mockObj,
+			retryRGService := RetryRGService{
+				rg:       mockObj,
 				retries:  tc.retries,
 				interval: interval,
 				sleep: func(t time.Duration) {
 					assert.Equal(interval, t)
 				},
 			}
-			_, err := retryTGService.GetTombstone("")
+			_, err := retryRGService.GetRecords("")
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -272,20 +272,7 @@ func TestRetryGetTombstone(t *testing.T) {
 
 }
 
-func TestCreateRetryTGService(t *testing.T) {
-	r := RetryTGService{
-		tg:       new(mockTG),
-		retries:  322,
-		interval: 2 * time.Minute,
-	}
-	assert := assert.New(t)
-	newService := CreateRetryTGService(r.tg, r.retries, r.interval)
-	assert.Equal(r.tg, newService.tg)
-	assert.Equal(r.retries, newService.retries)
-	assert.Equal(r.interval, newService.interval)
-}
-
-func TestRetryGetHistory(t *testing.T) {
+func TestRetryGetRecordsOfType(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
@@ -328,23 +315,23 @@ func TestRetryGetHistory(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
-			mockObj := new(mockHG)
+			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetHistory", mock.Anything, mock.Anything, mock.Anything).Return(History{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetHistory", mock.Anything, mock.Anything, mock.Anything).Return(History{}, tc.finalError).Once()
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
 
-			retryInsertService := RetryHGService{
-				hg:       mockObj,
+			retryRGService := RetryRGService{
+				rg:       mockObj,
 				retries:  tc.retries,
 				interval: interval,
 				sleep: func(t time.Duration) {
 					assert.Equal(interval, t)
 				},
 			}
-			_, err := retryInsertService.GetHistory("")
+			_, err := retryRGService.GetRecordsOfType("", 0)
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -356,15 +343,15 @@ func TestRetryGetHistory(t *testing.T) {
 
 }
 
-func TestCreateRetryHGService(t *testing.T) {
-	r := RetryHGService{
-		hg:       new(mockHG),
+func TestCreateRetryRGService(t *testing.T) {
+	r := RetryRGService{
+		rg:       new(mockRG),
 		retries:  322,
 		interval: 2 * time.Minute,
 	}
 	assert := assert.New(t)
-	newService := CreateRetryHGService(r.hg, r.retries, r.interval)
-	assert.Equal(r.hg, newService.hg)
+	newService := CreateRetryRGService(r.rg, r.retries, r.interval)
+	assert.Equal(r.rg, newService.rg)
 	assert.Equal(r.retries, newService.retries)
 	assert.Equal(r.interval, newService.interval)
 }

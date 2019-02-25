@@ -29,10 +29,10 @@
   authHeader: ["YXV0aEhlYWRlcg=="]
 
   db:
-    server: "db:11210"
-    bucket: "devices"
-    username: "Administrator"
-    password: "somepassword"
-    connectTimeout: 1m
-    opTimeout: 3s
+    server: "db:26257"
+    username: "roachadmin"
+    database: "devices"
     numRetries: 4
+    waitTimeMult: 5
+    connectTimeout: "60"
+    opTimeout: "100"
