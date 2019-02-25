@@ -53,3 +53,21 @@ func (d *mockDeleter) delete(value interface{}, where ...interface{}) error {
 	args := d.Called(value, where)
 	return args.Error(0)
 }
+
+type mockCloser struct {
+	mock.Mock
+}
+
+func (d *mockCloser) close() error {
+	args := d.Called()
+	return args.Error(0)
+}
+
+type mockPing struct {
+	mock.Mock
+}
+
+func (d *mockPing) ping() error {
+	args := d.Called()
+	return args.Error(0)
+}

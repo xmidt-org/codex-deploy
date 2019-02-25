@@ -18,9 +18,11 @@
 package db
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
+	"github.com/go-kit/kit/metrics/provider"
 	"github.com/goph/emperror"
 )
 
@@ -41,13 +43,28 @@ type Config struct {
 	WaitTimeMult   time.Duration
 	ConnectTimeout string
 	OpTimeout      string
+
+	// MaxIdleConns sets the max idle connections, the min value is 2
+	MaxIdleConns int
+
+	// MaxOpenConns sets the max open connections, to specify unlimited set to 0
+	MaxOpenConns int
+
+	PingInterval time.Duration
 }
 
 // Connection contains the tools to edit the database.
 type Connection struct {
-	finder  finder
-	creator creator
-	deleter deleter
+	finder     finder
+	creator    creator
+	deleter    deleter
+	closer     closer
+	pinger     pinger
+	stats      stats
+	gennericDB *sql.DB
+
+	measures    Measures
+	stopThreads []chan struct{}
 }
 
 // Event represents the event information in the database.  It has no TTL.
@@ -110,7 +127,7 @@ func (Record) TableName() string {
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
-func CreateDbConnection(config Config) (*Connection, error) {
+func CreateDbConnection(config Config, provider provider.Provider) (*Connection, error) {
 	var (
 		conn          *dbDecorator
 		err           error
@@ -151,8 +168,61 @@ func CreateDbConnection(config Config) (*Connection, error) {
 	db.finder = conn
 	db.creator = conn
 	db.deleter = conn
+	db.closer = conn
+	db.pinger = conn
+	db.stats = conn
+	db.gennericDB = conn.DB.DB()
+	db.measures = NewMeasures(provider)
+
+	db.setupMetrics()
+	db.configure(config.MaxIdleConns, config.MaxOpenConns)
 
 	return &db, nil
+}
+
+func (db *Connection) configure(maxIdleConns int, maxOpenConns int) {
+	if maxIdleConns < 2 {
+		maxIdleConns = 2
+	}
+	db.gennericDB.SetMaxIdleConns(maxIdleConns)
+	db.gennericDB.SetMaxOpenConns(maxOpenConns)
+}
+
+func (db *Connection) setupMetrics() {
+	// ping to check status
+	pingStop := doEvery(time.Second, func() {
+		err := db.Ping()
+		if err != nil {
+			db.measures.ConnectionStatus.Set(0.0)
+		} else {
+			db.measures.ConnectionStatus.Set(1.0)
+		}
+	})
+	db.stopThreads = append(db.stopThreads, pingStop)
+
+	// baseline
+	startStats := db.stats.getStats()
+	prevWaitCount := startStats.WaitCount
+	prevWaitDuration := startStats.WaitDuration.Nanoseconds()
+	prevMaxIdleClosed := startStats.MaxIdleClosed
+	prevMaxLifetimeClosed := startStats.MaxLifetimeClosed
+
+	// update measurements
+	metricsStop := doEvery(time.Second, func() {
+		stats := db.stats.getStats()
+
+		// current connections
+		db.measures.PoolOpenConnections.Set(float64(stats.OpenConnections))
+		db.measures.PoolInUseConnections.Set(float64(stats.InUse))
+		db.measures.PoolIdleConnections.Set(float64(stats.Idle))
+
+		// Counters
+		db.measures.SQLWaitCount.Add(float64(stats.WaitCount - prevWaitCount))
+		db.measures.SQLWaitDuration.Add(float64(stats.WaitDuration.Nanoseconds() - prevWaitDuration))
+		db.measures.SQLMaxIdleClosed.Add(float64(stats.MaxIdleClosed - prevMaxIdleClosed))
+		db.measures.SQLMaxLifetimeClosed.Add(float64(stats.MaxLifetimeClosed - prevMaxLifetimeClosed))
+	})
+	db.stopThreads = append(db.stopThreads, metricsStop)
 }
 
 // GetRecords returns a list of records for a given device
@@ -211,11 +281,47 @@ func (db *Connection) InsertRecord(record Record) error {
 	return err
 }
 
+func (db *Connection) Ping() error {
+	err := db.pinger.ping()
+	if err != nil {
+		return emperror.WrapWith(err, "Pinging connection failed")
+	}
+	return nil
+}
+
+func (db *Connection) Close() error {
+	for _, stopThread := range db.stopThreads {
+		stopThread <- struct{}{}
+	}
+
+	err := db.closer.close()
+	if err != nil {
+		return emperror.WrapWith(err, "Closing connection failed")
+	}
+	return nil
+}
+
 func isRecordValid(record Record) (bool, error) {
 	if record.DeviceID == "" {
 		return false, errInvaliddeviceID
 	}
 	return true, nil
+}
+
+func doEvery(d time.Duration, f func()) chan struct{} {
+	ticker := time.NewTicker(d)
+	stop := make(chan struct{}, 1)
+	go func(stop chan struct{}) {
+		for {
+			select {
+			case <-ticker.C:
+				f()
+			case <-stop:
+				return
+			}
+		}
+	}(stop)
+	return stop
 }
 
 // RemoveAll removes everything in the events table.  Used for testing.

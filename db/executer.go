@@ -18,9 +18,9 @@
 package db
 
 import (
-
 	// Import GORM-related packages.
 
+	"database/sql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -34,6 +34,15 @@ type (
 	}
 	deleter interface {
 		delete(value interface{}, where ...interface{}) error
+	}
+	pinger interface {
+		ping() error
+	}
+	closer interface {
+		close() error
+	}
+	stats interface {
+		getStats() sql.DBStats
 	}
 )
 
@@ -56,7 +65,26 @@ func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {
 	return db.Error
 }
 
+func (b *dbDecorator) ping() error {
+	return b.DB.DB().Ping()
+}
+
+func (b *dbDecorator) close() error {
+	return b.DB.Close()
+}
+
+func (b *dbDecorator) getStats() sql.DBStats {
+	return b.DB.DB().Stats()
+}
+
 func connect(connSpecStr string) (*dbDecorator, error) {
 	c, err := gorm.Open("postgres", connSpecStr)
-	return &dbDecorator{c}, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	db := &dbDecorator{c}
+
+	return db, nil
 }
