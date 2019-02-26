@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - Adding metrics to `db` package
  - Added _ping_ and _close_ to `db` package
  - Modified db timeouts to take time.Duration values
-
+ - Updated swagger comments to include examples
 
 ## [v0.1.5]
  - Added event type to record in `db` package
