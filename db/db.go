@@ -111,7 +111,7 @@ type Event struct {
 	// payload
 	//
 	// required: false
-	// example: ewogICAgICAgICJpZCI6ICI1IiwKICAgICAgICAidHMiOiAiMjAxOS0wMi0xMlQxMToxMDowMi42MTQxOTE3MzVaIiwKICAgICAgICAiYnl0ZXMtc2VudCI6IDAsCiAgICAgICAgIm1lc3NhZ2VzLXNlbnQiOiAxLAogICAgICAgICJieXRlcy1yZWNlaXZlZCI6IDAsCiAgICAgICAgIm1lc3NhZ2VzLXJlY2VpdmVkIjogMCwKICAgICAgICAiY29ubmVjdGVkLWF0IjogIjIwMTgtMTEtMjJUMjE6MTk6MDIuNjE0MTkxNzM1WiIsCiAgICAgICAgInVwLXRpbWUiOiAiMTZtNDYuNnMiLAogICAgICAgICJyZWFzb24tZm9yLWNsb3NlIjogInBpbmcgbWlzcyIKICAgIH0=
+	// example: eyJpZCI6IjUiLCJ0cyI6IjIwMTktMDItMTJUMTE6MTA6MDIuNjE0MTkxNzM1WiIsImJ5dGVzLXNlbnQiOjAsIm1lc3NhZ2VzLXNlbnQiOjEsImJ5dGVzLXJlY2VpdmVkIjowLCJtZXNzYWdlcy1yZWNlaXZlZCI6MH0=
 	Payload []byte `json:"payload,omitempty"`
 
 	// Other metadata and details related to this state.
