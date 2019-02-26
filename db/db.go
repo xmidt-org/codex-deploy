@@ -20,6 +20,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/metrics/provider"
@@ -41,8 +42,8 @@ type Config struct {
 	SSLCert        string
 	NumRetries     int
 	WaitTimeMult   time.Duration
-	ConnectTimeout string
-	OpTimeout      string
+	ConnectTimeout time.Duration
+	OpTimeout      time.Duration
 
 	// MaxIdleConns sets the max idle connections, the min value is 2
 	MaxIdleConns int
@@ -136,17 +137,23 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 
 	db := Connection{}
 
+	// pq expects seconds
+	connectTimeout := strconv.Itoa(int(config.ConnectTimeout.Seconds()))
+
+	// pq expects milliseconds
+	opTimeout := strconv.Itoa(int(float64(config.OpTimeout.Nanoseconds()) / 1000000))
+
 	// include timeout when connecting
 	// if missing a cert, connect insecurely
 	if config.SSLCert == "" || config.SSLKey == "" || config.SSLRootCert == "" {
 		connectionURL = "postgresql://" + config.Username + "@" + config.Server + "/" +
-			config.Database + "?sslmode=disable&connect_timeout=" + config.ConnectTimeout +
-			"&statement_timeout=" + config.OpTimeout
+			config.Database + "?sslmode=disable&connect_timeout=" + connectTimeout +
+			"&statement_timeout=" + opTimeout
 	} else {
 		connectionURL = "postgresql://" + config.Username + "@" + config.Server + "/" +
 			config.Database + "?ssl=true&sslmode=verify-full&sslrootcert=" + config.SSLRootCert +
 			"&sslkey=" + config.SSLKey + "&sslcert=" + config.SSLCert + "&connect_timeout=" +
-			config.ConnectTimeout + "&statement_timeout=" + config.OpTimeout
+			connectTimeout + "&statement_timeout=" + opTimeout
 	}
 
 	conn, err = connect(connectionURL)

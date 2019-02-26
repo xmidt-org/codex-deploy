@@ -42,8 +42,8 @@ db:
   database: "devices"
   numRetries: 4
   waitTimeMult: 5
-  connectTimeout: "60"
-  opTimeout: "100"
+  connectTimeout: 1m
+  opTimeout: 100ms
 regexRules:
   - regex: ".*/online$"
     tombstoneKey: "online"
