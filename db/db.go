@@ -75,41 +75,49 @@ type Event struct {
 	// The id for the event.
 	//
 	// required: true
+	// example: 425808997514969090
 	ID int `json:"id"`
 
 	// The time this event was found.
 	//
 	// required: true
+	// example: 1549969802
 	Time int64 `json:"time"`
 
 	// The source of this event.
 	//
 	// required: true
+	// example: dns:talaria-1234
 	Source string `json:"src"`
 
 	// The destination of this event.
 	//
 	// required: true
+	// example: device-status/5/offline
 	Destination string `json:"dest"`
 
 	// The partners related to this device.
 	//
 	// required: true
+	// example: ["hello","world"]
 	PartnerIDs []string `json:"partner_ids"`
 
 	// The transaction id for this event.
 	//
 	// required: true
+	// example: AgICJpZCI6ICJtYWM6NDhmN2MwZDc5MDI0Iiw
 	TransactionUUID string `json:"transaction_uuid,omitempty"`
 
 	// payload
 	//
 	// required: false
+	// example: eyJpZCI6IjUiLCJ0cyI6IjIwMTktMDItMTJUMTE6MTA6MDIuNjE0MTkxNzM1WiIsImJ5dGVzLXNlbnQiOjAsIm1lc3NhZ2VzLXNlbnQiOjEsImJ5dGVzLXJlY2VpdmVkIjowLCJtZXNzYWdlcy1yZWNlaXZlZCI6MH0=
 	Payload []byte `json:"payload,omitempty"`
 
 	// Other metadata and details related to this state.
 	//
 	// required: true
+	// example: {"/boot-time":1542834188,"/last-reconnect-reason":"spanish inquisition"}
 	Details map[string]interface{} `json:"details"`
 }
 
