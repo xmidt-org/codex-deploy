@@ -108,7 +108,10 @@ type Event struct {
 	// example: AgICJpZCI6ICJtYWM6NDhmN2MwZDc5MDI0Iiw
 	TransactionUUID string `json:"transaction_uuid,omitempty"`
 
-	// payload
+	// list of bytes received from the source.
+	// If the device destination matches "device-status/.*", this is a base64
+	// encoded json map that contains the key "ts", denoting the time the event
+	// was created.
 	//
 	// required: false
 	// example: eyJpZCI6IjUiLCJ0cyI6IjIwMTktMDItMTJUMTE6MTA6MDIuNjE0MTkxNzM1WiIsImJ5dGVzLXNlbnQiOjAsIm1lc3NhZ2VzLXNlbnQiOjEsImJ5dGVzLXJlY2VpdmVkIjowLCJtZXNzYWdlcy1yZWNlaXZlZCI6MH0=
