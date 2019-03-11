@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestRetryInsertRecord(t *testing.T) {
+func TestRetryInsertRecords(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
@@ -71,10 +71,10 @@ func TestRetryInsertRecord(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockInserter)
 			if tc.numCalls > 1 {
-				mockObj.On("InsertRecord", mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
+				mockObj.On("InsertRecords", mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("InsertRecord", mock.Anything).Return(tc.finalError).Once()
+				mockObj.On("InsertRecords", mock.Anything).Return(tc.finalError).Once()
 			}
 
 			retryInsertService := RetryInsertService{
@@ -87,7 +87,7 @@ func TestRetryInsertRecord(t *testing.T) {
 					},
 				},
 			}
-			err := retryInsertService.InsertRecord(Record{})
+			err := retryInsertService.InsertRecords(Record{})
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)

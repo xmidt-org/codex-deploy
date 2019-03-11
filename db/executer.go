@@ -21,8 +21,10 @@ import (
 	// Import GORM-related packages.
 
 	"database/sql"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"strings"
 )
 
 type (
@@ -31,6 +33,9 @@ type (
 	}
 	creator interface {
 		create(value interface{}) error
+	}
+	multiinserter interface {
+		insert(records []Record) error
 	}
 	deleter interface {
 		delete(value interface{}, where ...interface{}) error
@@ -58,6 +63,53 @@ func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
 func (b *dbDecorator) create(value interface{}) error {
 	db := b.Create(value)
 	return db.Error
+}
+
+func (b *dbDecorator) insert(records []Record) error {
+	if len(records) == 0 {
+		return errNoEvents
+	}
+	mainScope := b.DB.NewScope(records[0])
+	mainFields := mainScope.Fields()
+	quoted := make([]string, 0, len(mainFields))
+	for i := range mainFields {
+		// If primary key has blank value (0 for int, "" for string, nil for interface ...), skip it.
+		// If field is ignore field, skip it.
+		if (mainFields[i].IsPrimaryKey && mainFields[i].IsBlank) || (mainFields[i].IsIgnored) {
+			continue
+		}
+		quoted = append(quoted, mainScope.Quote(mainFields[i].DBName))
+	}
+	placeholdersArr := make([]string, 0, len(records))
+
+	for _, obj := range records {
+		scope := b.DB.NewScope(obj)
+		fields := scope.Fields()
+		placeholders := make([]string, 0, len(fields))
+		for i := range fields {
+			if (fields[i].IsPrimaryKey && fields[i].IsBlank) || (fields[i].IsIgnored) {
+				continue
+			}
+			// the trick it to use mainScope instead of scope so the number keeps on increasing
+			// aka $1, $2, $2, etc.
+			placeholders = append(placeholders, mainScope.AddToVars(fields[i].Field.Interface()))
+		}
+		placeholdersStr := "(" + strings.Join(placeholders, ", ") + ")"
+		placeholdersArr = append(placeholdersArr, placeholdersStr)
+		// add real variables for the replacement of placeholders' '?' letter later.
+		mainScope.SQLVars = append(mainScope.SQLVars, scope.SQLVars...)
+	}
+
+	mainScope.Raw(fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
+		mainScope.QuotedTableName(),
+		strings.Join(quoted, ", "),
+		strings.Join(placeholdersArr, ", "),
+	))
+
+	if _, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {

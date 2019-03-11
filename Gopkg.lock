@@ -57,7 +57,7 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:0c7d847b4dccf84032ac491b0996c0e13ebec7d5cf742ac2197b21c81255dc7f"
+  digest = "1:a9d7ed955261aeabd47f41d59c2f9d5f8710ec0ec78401a0468a83e0c29df868"
   name = "github.com/go-kit/kit"
   packages = [
     "log",
