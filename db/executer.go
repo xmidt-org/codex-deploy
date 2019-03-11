@@ -35,7 +35,7 @@ type (
 	creator interface {
 		create(value interface{}) error
 	}
-	multiinserter interface{
+	multiinserter interface {
 		insert(records []Record) error
 	}
 	deleter interface {
@@ -66,8 +66,8 @@ func (b *dbDecorator) create(value interface{}) error {
 	return db.Error
 }
 
-func (b *dbDecorator) insert(records []Record) error{
-	if len(records) == 0{
+func (b *dbDecorator) insert(records []Record) error {
+	if len(records) == 0 {
 		return errors.New("no records to be inserted")
 	}
 	mainScope := b.DB.NewScope(records[0])
@@ -82,7 +82,6 @@ func (b *dbDecorator) insert(records []Record) error{
 		quoted = append(quoted, mainScope.Quote(mainFields[i].DBName))
 	}
 	placeholdersArr := make([]string, 0, len(records))
-
 
 	for _, obj := range records {
 		scope := b.DB.NewScope(obj)

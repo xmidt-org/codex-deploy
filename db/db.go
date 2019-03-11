@@ -304,7 +304,7 @@ func (db *Connection) InsertRecords(records ...Record) error {
 		}
 	} else {
 		var validRecords []Record
-		for _, record := range records{
+		for _, record := range records {
 			if valid, _ := isRecordValid(record); !valid {
 				// ignore, todo:// log it?
 			} else {
