@@ -46,7 +46,7 @@ func execute(config retryConfig, op func() error) error {
 }
 
 type Inserter interface {
-	InsertRecord(record Record) error
+	InsertRecords(records ...Record) error
 }
 
 type RetryInsertService struct {
@@ -54,9 +54,9 @@ type RetryInsertService struct {
 	config   retryConfig
 }
 
-func (ri RetryInsertService) InsertRecord(record Record) error {
+func (ri RetryInsertService) InsertRecords(records ...Record) error {
 	return execute(ri.config, func() error {
-		return ri.inserter.InsertRecord(record)
+		return ri.inserter.InsertRecords(records...)
 	})
 }
 

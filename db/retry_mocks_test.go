@@ -27,8 +27,8 @@ type mockInserter struct {
 	mock.Mock
 }
 
-func (i *mockInserter) InsertRecord(record Record) error {
-	args := i.Called(record)
+func (i *mockInserter) InsertRecords(records ...Record) error {
+	args := i.Called(records)
 	return args.Error(0)
 }
 

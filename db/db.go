@@ -56,13 +56,14 @@ type Config struct {
 
 // Connection contains the tools to edit the database.
 type Connection struct {
-	finder     finder
-	creator    creator
-	deleter    deleter
-	closer     closer
-	pinger     pinger
-	stats      stats
-	gennericDB *sql.DB
+	finder      finder
+	creator     creator
+	mutliInsert multiinserter
+	deleter     deleter
+	closer      closer
+	pinger      pinger
+	stats       stats
+	gennericDB  *sql.DB
 
 	measures    Measures
 	stopThreads []chan struct{}
@@ -185,6 +186,7 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 
 	db.finder = conn
 	db.creator = conn
+	db.mutliInsert = conn
 	db.deleter = conn
 	db.closer = conn
 	db.pinger = conn
@@ -288,15 +290,31 @@ func (db *Connection) PruneRecords(t time.Time) error {
 }
 
 // InsertEvent adds a record to the table.
-func (db *Connection) InsertRecord(record Record) error {
-	if valid, err := isRecordValid(record); !valid {
-		return emperror.WrapWith(err, "Insert record not attempted", "record", record)
+func (db *Connection) InsertRecords(records ...Record) error {
+	if len(records) == 0 {
+		return errors.New("no records to be inserted")
+	} else if len(records) == 1 {
+		record := records[0]
+		if valid, err := isRecordValid(record); !valid {
+			return emperror.WrapWith(err, "Insert record not attempted", "record", record)
+		}
+		err := db.creator.create(&record)
+		if err != nil {
+			return emperror.WrapWith(err, "Inserting record failed", "record", record)
+		}
+	} else {
+		var validRecords []Record
+		for _, record := range records{
+			if valid, _ := isRecordValid(record); !valid {
+				// ignore, todo:// log it?
+			} else {
+				validRecords = append(validRecords, record)
+			}
+		}
+
+		return db.mutliInsert.insert(validRecords)
 	}
-	err := db.creator.create(&record)
-	if err != nil {
-		return emperror.WrapWith(err, "Inserting record failed", "record", record)
-	}
-	return err
+	return nil
 }
 
 func (db *Connection) Ping() error {

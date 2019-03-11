@@ -250,7 +250,7 @@ func TestInsertEvent(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				mockObj.On("create", mock.Anything).Return(tc.createErr).Times(tc.expectedCalls)
 			}
-			err := dbConnection.InsertRecord(tc.record)
+			err := dbConnection.InsertRecords(tc.record)
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
