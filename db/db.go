@@ -30,6 +30,7 @@ import (
 var (
 	errInvaliddeviceID  = errors.New("Invalid device ID")
 	errInvalidEventType = errors.New("Invalid event type")
+	errNoEvents = errors.New("no records to be inserted")
 )
 
 // Config contains the initial configuration information needed to create a db connection.
@@ -292,7 +293,7 @@ func (db *Connection) PruneRecords(t time.Time) error {
 // InsertEvent adds a record to the table.
 func (db *Connection) InsertRecords(records ...Record) error {
 	if len(records) == 0 {
-		return errors.New("no records to be inserted")
+		return errNoEvents
 	} else if len(records) == 1 {
 		record := records[0]
 		if valid, err := isRecordValid(record); !valid {
@@ -303,7 +304,7 @@ func (db *Connection) InsertRecords(records ...Record) error {
 			return emperror.WrapWith(err, "Inserting record failed", "record", record)
 		}
 	} else {
-		var validRecords []Record
+		validRecords := make([]Record, 0)
 		for _, record := range records {
 			if valid, _ := isRecordValid(record); !valid {
 				// ignore, todo:// log it?

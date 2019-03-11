@@ -282,9 +282,10 @@ func TestMultiInsertEvent(t *testing.T) {
 		},
 		{
 			description:   "Invalid Event Error",
-			records:       []Record{Record{}},
-			expectedErr:   errInvaliddeviceID,
-			expectedCalls: 0,
+			records:       []Record{{}, {}, {}, {}},
+			createErr:     errNoEvents,
+			expectedErr:   errNoEvents,
+			expectedCalls: 1,
 		},
 		{
 			description:   "Multi Record",

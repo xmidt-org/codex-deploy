@@ -21,7 +21,6 @@ import (
 	// Import GORM-related packages.
 
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -68,7 +67,7 @@ func (b *dbDecorator) create(value interface{}) error {
 
 func (b *dbDecorator) insert(records []Record) error {
 	if len(records) == 0 {
-		return errors.New("no records to be inserted")
+		return errNoEvents
 	}
 	mainScope := b.DB.NewScope(records[0])
 	mainFields := mainScope.Fields()
