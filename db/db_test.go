@@ -261,6 +261,60 @@ func TestInsertEvent(t *testing.T) {
 	}
 }
 
+func TestMultiInsertEvent(t *testing.T) {
+	testCreateErr := errors.New("test create error")
+	goodRecord := Record{
+		DeviceID: "1234",
+	}
+
+	tests := []struct {
+		description   string
+		records       []Record
+		createErr     error
+		expectedErr   error
+		expectedCalls int
+	}{
+		{
+			description:   "Success",
+			records:       []Record{goodRecord, {}},
+			expectedErr:   nil,
+			expectedCalls: 1,
+		},
+		{
+			description:   "Invalid Event Error",
+			records:       []Record{Record{}},
+			expectedErr:   errInvaliddeviceID,
+			expectedCalls: 0,
+		},
+		{
+			description:   "Multi Record",
+			records:       []Record{goodRecord, {DeviceID: "54321"}},
+			createErr:     testCreateErr,
+			expectedErr:   testCreateErr,
+			expectedCalls: 1,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
+			mockObj := new(mockMultiInsert)
+			dbConnection := Connection{
+				mutliInsert: mockObj,
+			}
+			if tc.expectedCalls > 0 {
+				mockObj.On("insert", mock.Anything).Return(tc.createErr).Times(tc.expectedCalls)
+			}
+			err := dbConnection.InsertRecords(tc.records...)
+			mockObj.AssertExpectations(t)
+			if tc.expectedErr == nil || err == nil {
+				assert.Equal(tc.expectedErr, err)
+			} else {
+				assert.Contains(err.Error(), tc.expectedErr.Error())
+			}
+		})
+	}
+}
+
 func TestRemoveAll(t *testing.T) {
 	tests := []struct {
 		description string

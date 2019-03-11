@@ -45,6 +45,15 @@ func (c *mockCreator) create(value interface{}) error {
 	return args.Error(0)
 }
 
+type mockMultiInsert struct {
+	mock.Mock
+}
+
+func (c *mockMultiInsert) insert(records []Record) error {
+	args := c.Called(records)
+	return args.Error(0)
+}
+
 type mockDeleter struct {
 	mock.Mock
 }
