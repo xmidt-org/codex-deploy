@@ -30,7 +30,7 @@ import (
 var (
 	errInvaliddeviceID  = errors.New("Invalid device ID")
 	errInvalidEventType = errors.New("Invalid event type")
-	errNoEvents = errors.New("no records to be inserted")
+	errNoEvents         = errors.New("no records to be inserted")
 )
 
 // Config contains the initial configuration information needed to create a db connection.
