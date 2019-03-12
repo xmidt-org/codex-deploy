@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.1]
+ - Toned down travis
+ - Updated comments for swagger docs
+ - Removed the index on type
+ - Added multi record insert support
+
 ## [v0.2.0]
  - Added `cipher` package
  - Fixed `db` package mocks and unit tests to match cockroachdb code
@@ -40,7 +46,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.1...HEAD
+[v0.2.0]: https://github.com/Comcast/codex/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/Comcast/codex/compare/v0.1.5...v0.2.0
 [v0.1.5]: https://github.com/Comcast/codex/compare/v0.1.4...v0.1.5
 [v0.1.4]: https://github.com/Comcast/codex/compare/v0.1.3...v0.1.4
