@@ -282,7 +282,8 @@ func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record
 
 // PruneRecords removes records past their deathdate.
 func (db *Connection) PruneRecords(t time.Time) error {
-	err := db.deleter.delete(&Record{}, "death_date < ?", t)
+	rowsAffected, err := db.deleter.delete(&Record{}, "death_date < ?", t)
+	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.WrapWith(err, "Prune records failed", "time", t)
@@ -342,7 +343,8 @@ func doEvery(d time.Duration, f func()) chan struct{} {
 
 // RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
-	err := db.deleter.delete(&Record{})
+	rowsAffected, err := db.deleter.delete(&Record{})
+	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.Wrap(err, "Removing all records from database failed")

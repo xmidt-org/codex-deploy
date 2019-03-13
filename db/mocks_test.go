@@ -58,9 +58,9 @@ type mockDeleter struct {
 	mock.Mock
 }
 
-func (d *mockDeleter) delete(value interface{}, where ...interface{}) error {
+func (d *mockDeleter) delete(value interface{}, where ...interface{}) (int64, error) {
 	args := d.Called(value, where)
-	return args.Error(0)
+	return int64(args.Int(0)), args.Error(1)
 }
 
 type mockCloser struct {

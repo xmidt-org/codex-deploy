@@ -205,14 +205,16 @@ func TestUpdateHistory(t *testing.T) {
 				deleter:  mockObj,
 				measures: m,
 			}
-			mockObj.On("delete", mock.Anything, mock.Anything).Return(tc.pruneErr).Once()
+			mockObj.On("delete", mock.Anything, mock.Anything).Return(6, tc.pruneErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(0.0))
 
 			err := dbConnection.PruneRecords(tc.time)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(6.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -310,14 +312,16 @@ func TestRemoveAll(t *testing.T) {
 				measures: m,
 				deleter:  mockObj,
 			}
-			mockObj.On("delete", mock.Anything, mock.Anything).Return(tc.expectedErr).Once()
+			mockObj.On("delete", mock.Anything, mock.Anything).Return(6, tc.expectedErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(0.0))
 
 			err := dbConnection.RemoveAll()
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(6.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {

@@ -158,10 +158,10 @@ func TestRetryPruneRecords(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockPruner)
 			if tc.numCalls > 1 {
-				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
+				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(0, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
+				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(0, tc.finalError).Once()
 			}
 
 			retryInsertService := RetryUpdateService{
@@ -174,7 +174,7 @@ func TestRetryPruneRecords(t *testing.T) {
 					},
 				},
 			}
-			err := retryInsertService.PruneRecords(time.Now())
+			_, err := retryInsertService.PruneRecords(time.Now())
 			mockObj.AssertExpectations(t)
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)

@@ -36,7 +36,7 @@ type (
 		insert(records []Record) error
 	}
 	deleter interface {
-		delete(value interface{}, where ...interface{}) error
+		delete(value interface{}, where ...interface{}) (int64, error)
 	}
 	pinger interface {
 		ping() error
@@ -105,9 +105,9 @@ func (b *dbDecorator) insert(records []Record) error {
 	return nil
 }
 
-func (b *dbDecorator) delete(value interface{}, where ...interface{}) error {
+func (b *dbDecorator) delete(value interface{}, where ...interface{}) (int64, error) {
 	db := b.Delete(value, where...)
-	return db.Error
+	return db.RowsAffected, db.Error
 }
 
 func (b *dbDecorator) ping() error {

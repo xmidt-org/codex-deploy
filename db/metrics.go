@@ -36,6 +36,7 @@ const (
 	SQLQuerySuccessCounter      = "sql_query_success_count"
 	SQLQueryFailureCounter      = "sql_query_failure_count"
 	SQLQueryRetryCounter        = "sql_query_retry_count"
+	SQLDeletedRowsCounter       = "sql_deleted_rows_count"
 )
 
 //Metrics returns the Metrics relevant to this package
@@ -102,6 +103,11 @@ func Metrics() []xmetrics.Metric {
 			Type: "counter",
 			Help: "The total number of SQL queries retried",
 		},
+		{
+			Name: SQLDeletedRowsCounter,
+			Type: "counter",
+			Help: "The total number of rows deleted",
+		},
 	}
 }
 
@@ -119,6 +125,7 @@ type Measures struct {
 	SQLQuerySuccessCount metrics.Counter
 	SQLQueryFailureCount metrics.Counter
 	SQLQueryRetryCount   metrics.Counter
+	SQLDeletedRows       metrics.Counter
 }
 
 func NewMeasures(p provider.Provider) Measures {
@@ -136,5 +143,6 @@ func NewMeasures(p provider.Provider) Measures {
 		SQLQuerySuccessCount: p.NewCounter(SQLQuerySuccessCounter),
 		SQLQueryFailureCount: p.NewCounter(SQLQueryFailureCounter),
 		SQLQueryRetryCount:   p.NewCounter(SQLQueryRetryCounter),
+		SQLDeletedRows:       p.NewCounter(SQLDeletedRowsCounter),
 	}
 }

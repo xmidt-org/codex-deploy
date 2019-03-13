@@ -72,7 +72,7 @@ func CreateRetryInsertService(inserter Inserter, retries int, interval time.Dura
 }
 
 type Pruner interface {
-	PruneRecords(t time.Time) error
+	PruneRecords(t time.Time) (int64, error)
 }
 
 type RetryUpdateService struct {
@@ -80,10 +80,25 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) PruneRecords(t time.Time) error {
-	return execute(ru.config, func() error {
-		return ru.pruner.PruneRecords(t)
-	})
+func (ru RetryUpdateService) PruneRecords(t time.Time) (int64, error) {
+	var nrows int64
+	var err error
+
+	retries := ru.config.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ru.config.sleep(ru.config.interval)
+		}
+		if nrows, err = ru.pruner.PruneRecords(t); err == nil {
+			break
+		}
+	}
+
+	return nrows, err
 }
 
 func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration) RetryUpdateService {
