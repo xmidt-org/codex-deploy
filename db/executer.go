@@ -30,13 +30,13 @@ import (
 
 type (
 	finder interface {
-		find(out interface{}, where ...interface{}) error
+		find(out *[]Record, where ...interface{}) error
 	}
 	multiinserter interface {
 		insert(records []Record) error
 	}
 	deleter interface {
-		delete(value interface{}, where ...interface{}) (int64, error)
+		delete(value *Record, where ...interface{}) (int64, error)
 	}
 	pinger interface {
 		ping() error
@@ -53,7 +53,7 @@ type dbDecorator struct {
 	*gorm.DB
 }
 
-func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
+func (b *dbDecorator) find(out *[]Record, where ...interface{}) error {
 	db := b.Order("birth_date desc").Find(out, where...)
 	return db.Error
 }
@@ -105,7 +105,7 @@ func (b *dbDecorator) insert(records []Record) error {
 	return nil
 }
 
-func (b *dbDecorator) delete(value interface{}, where ...interface{}) (int64, error) {
+func (b *dbDecorator) delete(value *Record, where ...interface{}) (int64, error) {
 	db := b.Delete(value, where...)
 	return db.RowsAffected, db.Error
 }

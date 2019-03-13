@@ -2,7 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
   digest = "1:7d35d3df059283beb02aa2bf0c748e11910a37e678d864cef0a2e01854b79a12"
   name = "github.com/Comcast/webpa-common"
   packages = [
@@ -474,7 +473,7 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "5c2c250b6a70e39b74bb544433a348a892b10530"
+  revision = "9f648a60d9775ef5c977e7669d1673a7a67bef33"
 
 [[projects]]
   branch = "master"

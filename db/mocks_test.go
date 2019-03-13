@@ -27,7 +27,7 @@ type mockFinder struct {
 	mock.Mock
 }
 
-func (f *mockFinder) find(out interface{}, where ...interface{}) error {
+func (f *mockFinder) find(out *[]Record, where ...interface{}) error {
 	args := f.Called(out, where)
 	err := json.Unmarshal(args.Get(1).([]byte), out)
 	if err != nil {
@@ -58,7 +58,7 @@ type mockDeleter struct {
 	mock.Mock
 }
 
-func (d *mockDeleter) delete(value interface{}, where ...interface{}) (int64, error) {
+func (d *mockDeleter) delete(value *Record, where ...interface{}) (int64, error) {
 	args := d.Called(value, where)
 	return int64(args.Int(0)), args.Error(1)
 }
