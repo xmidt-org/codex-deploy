@@ -17,32 +17,17 @@
 
 package db
 
-import "time"
+import (
+	"time"
+
+	"github.com/go-kit/kit/metrics/provider"
+)
 
 type retryConfig struct {
 	retries  int
 	interval time.Duration
 	sleep    func(time.Duration)
-}
-
-func execute(config retryConfig, op func() error) error {
-	var err error
-
-	retries := config.retries
-	if retries < 1 {
-		retries = 0
-	}
-
-	for i := 0; i < retries+1; i++ {
-		if i > 0 {
-			config.sleep(config.interval)
-		}
-		if err = op(); err == nil {
-			break
-		}
-	}
-
-	return err
+	measures Measures
 }
 
 type Inserter interface {
@@ -55,24 +40,40 @@ type RetryInsertService struct {
 }
 
 func (ri RetryInsertService) InsertRecords(records ...Record) error {
-	return execute(ri.config, func() error {
-		return ri.inserter.InsertRecords(records...)
-	})
+	var err error
+
+	retries := ri.config.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ri.config.measures.SQLQueryRetryCount.With(typeLabel, insertType).Add(1.0)
+			ri.config.sleep(ri.config.interval)
+		}
+		if err = ri.inserter.InsertRecords(records...); err == nil {
+			break
+		}
+	}
+
+	return err
 }
 
-func CreateRetryInsertService(inserter Inserter, retries int, interval time.Duration) RetryInsertService {
+func CreateRetryInsertService(inserter Inserter, retries int, interval time.Duration, provider provider.Provider) RetryInsertService {
 	return RetryInsertService{
 		inserter: inserter,
 		config: retryConfig{
 			retries:  retries,
 			interval: interval,
 			sleep:    time.Sleep,
+			measures: NewMeasures(provider),
 		},
 	}
 }
 
 type Pruner interface {
-	PruneRecords(t time.Time) (int64, error)
+	PruneRecords(t time.Time) error
 }
 
 type RetryUpdateService struct {
@@ -80,8 +81,7 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) PruneRecords(t time.Time) (int64, error) {
-	var nrows int64
+func (ru RetryUpdateService) PruneRecords(t time.Time) error {
 	var err error
 
 	retries := ru.config.retries
@@ -91,23 +91,25 @@ func (ru RetryUpdateService) PruneRecords(t time.Time) (int64, error) {
 
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
+			ru.config.measures.SQLQueryRetryCount.With(typeLabel, deleteType).Add(1.0)
 			ru.config.sleep(ru.config.interval)
 		}
-		if nrows, err = ru.pruner.PruneRecords(t); err == nil {
+		if err = ru.pruner.PruneRecords(t); err == nil {
 			break
 		}
 	}
 
-	return nrows, err
+	return err
 }
 
-func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration) RetryUpdateService {
+func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration, provider provider.Provider) RetryUpdateService {
 	return RetryUpdateService{
 		pruner: pruner,
 		config: retryConfig{
 			retries:  retries,
 			interval: interval,
 			sleep:    time.Sleep,
+			measures: NewMeasures(provider),
 		},
 	}
 }
@@ -118,10 +120,8 @@ type RecordGetter interface {
 }
 
 type RetryRGService struct {
-	rg       RecordGetter
-	retries  int
-	interval time.Duration
-	sleep    func(time.Duration)
+	rg     RecordGetter
+	config retryConfig
 }
 
 func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
@@ -130,14 +130,15 @@ func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
 		record []Record
 	)
 
-	retries := rtg.retries
+	retries := rtg.config.retries
 	if retries < 1 {
 		retries = 0
 	}
 
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			rtg.sleep(rtg.interval)
+			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			rtg.config.sleep(rtg.config.interval)
 		}
 		if record, err = rtg.rg.GetRecords(deviceID); err == nil {
 			break
@@ -153,14 +154,15 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, eventType int) ([]Re
 		record []Record
 	)
 
-	retries := rtg.retries
+	retries := rtg.config.retries
 	if retries < 1 {
 		retries = 0
 	}
 
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			rtg.sleep(rtg.interval)
+			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			rtg.config.sleep(rtg.config.interval)
 		}
 		if record, err = rtg.rg.GetRecordsOfType(deviceID, eventType); err == nil {
 			break
@@ -170,11 +172,14 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, eventType int) ([]Re
 	return record, err
 }
 
-func CreateRetryRGService(recordGetter RecordGetter, retries int, interval time.Duration) RetryRGService {
+func CreateRetryRGService(recordGetter RecordGetter, retries int, interval time.Duration, provider provider.Provider) RetryRGService {
 	return RetryRGService{
-		rg:       recordGetter,
-		retries:  retries,
-		interval: interval,
-		sleep:    time.Sleep,
+		rg: recordGetter,
+		config: retryConfig{
+			retries:  retries,
+			interval: interval,
+			sleep:    time.Sleep,
+			measures: NewMeasures(provider),
+		},
 	}
 }

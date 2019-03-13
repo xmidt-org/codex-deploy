@@ -36,9 +36,9 @@ type mockPruner struct {
 	mock.Mock
 }
 
-func (p *mockPruner) PruneRecords(t time.Time) (int64, error) {
+func (p *mockPruner) PruneRecords(t time.Time) error {
 	args := p.Called(t)
-	return int64(args.Int(0)), args.Error(1)
+	return args.Error(0)
 }
 
 type mockRG struct {
