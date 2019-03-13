@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,11 +38,13 @@ var (
 
 func TestGetRecords(t *testing.T) {
 	tests := []struct {
-		description     string
-		deviceID        string
-		expectedRecords []Record
-		expectedErr     error
-		expectedCalls   int
+		description           string
+		deviceID              string
+		expectedRecords       []Record
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		expectedErr           error
+		expectedCalls         int
 	}{
 		{
 			description: "Success",
@@ -53,22 +56,17 @@ func TestGetRecords(t *testing.T) {
 					DeviceID: "1234",
 				},
 			},
-			expectedErr:   nil,
-			expectedCalls: 1,
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
+			expectedCalls:         1,
 		},
 		{
-			description:     "Invalid Device Error",
-			deviceID:        "",
-			expectedRecords: []Record{},
-			expectedErr:     errInvaliddeviceID,
-			expectedCalls:   0,
-		},
-		{
-			description:     "Get Error",
-			deviceID:        "1234",
-			expectedRecords: []Record{},
-			expectedErr:     errors.New("test Get error"),
-			expectedCalls:   1,
+			description:           "Get Error",
+			deviceID:              "1234",
+			expectedRecords:       []Record{},
+			expectedFailureMetric: 1.0,
+			expectedErr:           errors.New("test Get error"),
+			expectedCalls:         1,
 		},
 	}
 
@@ -76,16 +74,24 @@ func TestGetRecords(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockFinder)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
-				finder: mockObj,
+				measures: m,
+				finder:   mockObj,
 			}
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
 				mockObj.On("find", mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			records, err := dbConnection.GetRecords(tc.deviceID)
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -98,12 +104,14 @@ func TestGetRecords(t *testing.T) {
 
 func TestGetRecordsOfType(t *testing.T) {
 	tests := []struct {
-		description     string
-		deviceID        string
-		eventType       int
-		expectedRecords []Record
-		expectedErr     error
-		expectedCalls   int
+		description           string
+		deviceID              string
+		eventType             int
+		expectedRecords       []Record
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		expectedErr           error
+		expectedCalls         int
 	}{
 		{
 			description: "Success",
@@ -116,30 +124,17 @@ func TestGetRecordsOfType(t *testing.T) {
 					DeviceID: "1234",
 				},
 			},
-			expectedErr:   nil,
-			expectedCalls: 1,
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
+			expectedCalls:         1,
 		},
 		{
-			description:     "Invalid Event type Error",
-			deviceID:        "",
-			eventType:       -1,
-			expectedRecords: []Record{},
-			expectedErr:     errInvalidEventType,
-			expectedCalls:   0,
-		},
-		{
-			description:     "Invalid Device Error",
-			deviceID:        "",
-			expectedRecords: []Record{},
-			expectedErr:     errInvaliddeviceID,
-			expectedCalls:   0,
-		},
-		{
-			description:     "Get Error",
-			deviceID:        "1234",
-			expectedRecords: []Record{},
-			expectedErr:     errors.New("test Get error"),
-			expectedCalls:   1,
+			description:           "Get Error",
+			deviceID:              "1234",
+			expectedRecords:       []Record{},
+			expectedFailureMetric: 1.0,
+			expectedErr:           errors.New("test Get error"),
+			expectedCalls:         1,
 		},
 	}
 
@@ -147,16 +142,24 @@ func TestGetRecordsOfType(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockFinder)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
-				finder: mockObj,
+				measures: m,
+				finder:   mockObj,
 			}
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
 				mockObj.On("find", mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			records, err := dbConnection.GetRecordsOfType(tc.deviceID, tc.eventType)
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -170,88 +173,46 @@ func TestGetRecordsOfType(t *testing.T) {
 func TestUpdateHistory(t *testing.T) {
 	pruneTestErr := errors.New("test prune history error")
 	tests := []struct {
-		description string
-		time        time.Time
-		pruneErr    error
-		expectedErr error
+		description           string
+		time                  time.Time
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		pruneErr              error
+		expectedErr           error
 	}{
 		{
-			description: "Success",
-			time:        time.Now(),
-			pruneErr:    nil,
-			expectedErr: nil,
+			description:           "Success",
+			time:                  time.Now(),
+			expectedSuccessMetric: 1.0,
+			pruneErr:              nil,
+			expectedErr:           nil,
 		},
 		{
-			description: "Prune History Error",
-			time:        time.Now(),
-			pruneErr:    pruneTestErr,
-			expectedErr: pruneTestErr,
+			description:           "Prune History Error",
+			time:                  time.Now(),
+			expectedFailureMetric: 1.0,
+			pruneErr:              pruneTestErr,
+			expectedErr:           pruneTestErr,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockDeleter)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
-				deleter: mockObj,
+				deleter:  mockObj,
+				measures: m,
 			}
 			mockObj.On("delete", mock.Anything, mock.Anything).Return(tc.pruneErr).Once()
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			err := dbConnection.PruneRecords(tc.time)
 			mockObj.AssertExpectations(t)
-			if tc.expectedErr == nil || err == nil {
-				assert.Equal(tc.expectedErr, err)
-			} else {
-				assert.Contains(err.Error(), tc.expectedErr.Error())
-			}
-		})
-	}
-}
-
-func TestInsertEvent(t *testing.T) {
-	testCreateErr := errors.New("test create error")
-	goodRecord := Record{
-		DeviceID: "1234",
-	}
-
-	tests := []struct {
-		description   string
-		record        Record
-		createErr     error
-		expectedErr   error
-		expectedCalls int
-	}{
-		{
-			description:   "Success",
-			record:        goodRecord,
-			expectedErr:   nil,
-			expectedCalls: 1,
-		},
-		{
-			description:   "Invalid Event Error",
-			record:        Record{},
-			expectedErr:   errInvaliddeviceID,
-			expectedCalls: 0,
-		},
-		{
-			description:   "Create Error",
-			record:        goodRecord,
-			createErr:     testCreateErr,
-			expectedErr:   testCreateErr,
-			expectedCalls: 1,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.description, func(t *testing.T) {
-			assert := assert.New(t)
-			mockObj := new(mockCreator)
-			dbConnection := Connection{
-				creator: mockObj,
-			}
-			if tc.expectedCalls > 0 {
-				mockObj.On("create", mock.Anything).Return(tc.createErr).Times(tc.expectedCalls)
-			}
-			err := dbConnection.InsertRecords(tc.record)
-			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -268,45 +229,50 @@ func TestMultiInsertEvent(t *testing.T) {
 	}
 
 	tests := []struct {
-		description   string
-		records       []Record
-		createErr     error
-		expectedErr   error
-		expectedCalls int
+		description           string
+		records               []Record
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		createErr             error
+		expectedErr           error
+		expectedCalls         int
 	}{
 		{
-			description:   "Success",
-			records:       []Record{goodRecord, {}},
-			expectedErr:   nil,
-			expectedCalls: 1,
+			description:           "Success",
+			records:               []Record{goodRecord, {}},
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
+			expectedCalls:         1,
 		},
 		{
-			description:   "Invalid Event Error",
-			records:       []Record{{}, {}, {}, {}},
-			createErr:     errNoEvents,
-			expectedErr:   errNoEvents,
-			expectedCalls: 1,
-		},
-		{
-			description:   "Multi Record",
-			records:       []Record{goodRecord, {DeviceID: "54321"}},
-			createErr:     testCreateErr,
-			expectedErr:   testCreateErr,
-			expectedCalls: 1,
+			description:           "Create Error",
+			records:               []Record{goodRecord, {DeviceID: "54321"}},
+			expectedFailureMetric: 1.0,
+			createErr:             testCreateErr,
+			expectedErr:           testCreateErr,
+			expectedCalls:         1,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockMultiInsert)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
+				measures:    m,
 				mutliInsert: mockObj,
 			}
 			if tc.expectedCalls > 0 {
 				mockObj.On("insert", mock.Anything).Return(tc.createErr).Times(tc.expectedCalls)
 			}
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			err := dbConnection.InsertRecords(tc.records...)
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -318,28 +284,40 @@ func TestMultiInsertEvent(t *testing.T) {
 
 func TestRemoveAll(t *testing.T) {
 	tests := []struct {
-		description string
-		expectedErr error
+		description           string
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		expectedErr           error
 	}{
 		{
-			description: "Success",
-			expectedErr: nil,
+			description:           "Success",
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
 		},
 		{
-			description: "Execute Error",
-			expectedErr: errors.New("test delete error"),
+			description:           "Execute Error",
+			expectedFailureMetric: 1.0,
+			expectedErr:           errors.New("test delete error"),
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockDeleter)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
-				deleter: mockObj,
+				measures: m,
+				deleter:  mockObj,
 			}
 			mockObj.On("delete", mock.Anything, mock.Anything).Return(tc.expectedErr).Once()
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			err := dbConnection.RemoveAll()
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -369,6 +347,9 @@ func TestClose(t *testing.T) {
 			mockObj := new(mockCloser)
 			dbConnection := Connection{
 				closer: mockObj,
+				stopThreads: []chan struct{}{
+					make(chan struct{}, 10),
+				},
 			}
 			mockObj.On("close").Return(tc.expectedErr).Once()
 			err := dbConnection.Close()
@@ -384,28 +365,40 @@ func TestClose(t *testing.T) {
 
 func TestPing(t *testing.T) {
 	tests := []struct {
-		description string
-		expectedErr error
+		description           string
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		expectedErr           error
 	}{
 		{
-			description: "Success",
-			expectedErr: nil,
+			description:           "Success",
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
 		},
 		{
-			description: "Ping Error",
-			expectedErr: errors.New("test ping error"),
+			description:           "Ping Error",
+			expectedFailureMetric: 1.0,
+			expectedErr:           errors.New("test ping error"),
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockPing)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 			dbConnection := Connection{
-				pinger: mockObj,
+				measures: m,
+				pinger:   mockObj,
 			}
 			mockObj.On("ping").Return(tc.expectedErr).Once()
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
 			err := dbConnection.Ping()
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, typeLabel, pingType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, typeLabel, pingType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {

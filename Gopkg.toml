@@ -18,6 +18,10 @@
   name = "github.com/hashicorp/vault"
   version = "v1.0.0-rc1"
 
+[[constraint]]
+  name = "github.com/go-kit/kit"
+  version = "0.5.0"
+
 [prune]
   go-tests = true
   unused-packages = true

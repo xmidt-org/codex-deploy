@@ -33,6 +33,9 @@ const (
 	SQLWaitDurationCounter      = "sql_wait_duration_seconds"
 	SQLMaxIdleClosedCounter     = "sql_max_idle_closed"
 	SQLMaxLifetimeClosedCounter = "sql_max_lifetime_closed"
+	SQLQuerySuccessCounter      = "sql_query_success_count"
+	SQLQueryFailureCounter      = "sql_query_failure_count"
+	SQLQueryRetryCounter        = "sql_query_retry_count"
 )
 
 //Metrics returns the Metrics relevant to this package
@@ -84,6 +87,21 @@ func Metrics() []xmetrics.Metric {
 			Type: "counter",
 			Help: "The total number of connections closed due to SetConnMaxLifetime",
 		},
+		{
+			Name: SQLQuerySuccessCounter,
+			Type: "counter",
+			Help: "The total number of successful SQL queries",
+		},
+		{
+			Name: SQLQueryFailureCounter,
+			Type: "counter",
+			Help: "The total number of failed SQL queries",
+		},
+		{
+			Name: SQLQueryRetryCounter,
+			Type: "counter",
+			Help: "The total number of SQL queries retried",
+		},
 	}
 }
 
@@ -98,6 +116,9 @@ type Measures struct {
 	SQLWaitDuration      metrics.Counter
 	SQLMaxIdleClosed     metrics.Counter
 	SQLMaxLifetimeClosed metrics.Counter
+	SQLQuerySuccessCount metrics.Counter
+	SQLQueryFailureCount metrics.Counter
+	SQLQueryRetryCount   metrics.Counter
 }
 
 func NewMeasures(p provider.Provider) Measures {
@@ -112,5 +133,8 @@ func NewMeasures(p provider.Provider) Measures {
 		SQLWaitDuration:      p.NewCounter(SQLWaitDurationCounter),
 		SQLMaxIdleClosed:     p.NewCounter(SQLMaxIdleClosedCounter),
 		SQLMaxLifetimeClosed: p.NewCounter(SQLMaxLifetimeClosedCounter),
+		SQLQuerySuccessCount: p.NewCounter(SQLQuerySuccessCounter),
+		SQLQueryFailureCount: p.NewCounter(SQLQueryFailureCounter),
+		SQLQueryRetryCount:   p.NewCounter(SQLQueryRetryCounter),
 	}
 }

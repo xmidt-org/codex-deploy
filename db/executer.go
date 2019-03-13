@@ -22,17 +22,15 @@ import (
 
 	"database/sql"
 	"fmt"
+	"strings"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"strings"
 )
 
 type (
 	finder interface {
 		find(out interface{}, where ...interface{}) error
-	}
-	creator interface {
-		create(value interface{}) error
 	}
 	multiinserter interface {
 		insert(records []Record) error
@@ -57,11 +55,6 @@ type dbDecorator struct {
 
 func (b *dbDecorator) find(out interface{}, where ...interface{}) error {
 	db := b.Order("birth_date desc").Find(out, where...)
-	return db.Error
-}
-
-func (b *dbDecorator) create(value interface{}) error {
-	db := b.Create(value)
 	return db.Error
 }
 
