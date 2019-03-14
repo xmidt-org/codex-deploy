@@ -33,6 +33,14 @@ var (
 	errNoEvents         = errors.New("no records to be inserted")
 )
 
+const (
+	typeLabel  = "type"
+	insertType = "insert"
+	deleteType = "delete"
+	readType   = "read"
+	pingType   = "ping"
+)
+
 // Config contains the initial configuration information needed to create a db connection.
 type Config struct {
 	Server         string
@@ -58,7 +66,6 @@ type Config struct {
 // Connection contains the tools to edit the database.
 type Connection struct {
 	finder      finder
-	creator     creator
 	mutliInsert multiinserter
 	deleter     deleter
 	closer      closer
@@ -186,7 +193,6 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 	conn.AutoMigrate(&Record{})
 
 	db.finder = conn
-	db.creator = conn
 	db.mutliInsert = conn
 	db.deleter = conn
 	db.closer = conn
@@ -251,14 +257,12 @@ func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
-	if deviceID == "" {
-		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get records not attempted",
-			"device id", deviceID)
-	}
 	err := db.finder.find(&deviceInfo, "device_id = ?", deviceID)
 	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
 
@@ -267,62 +271,45 @@ func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record
 	var (
 		deviceInfo []Record
 	)
-	if eventType < 0 {
-		return []Record{}, emperror.WrapWith(errInvalidEventType, "Get records not attempted", "event type", eventType)
-	}
-	if deviceID == "" {
-		return []Record{}, emperror.WrapWith(errInvaliddeviceID, "Get records not attempted",
-			"device id", deviceID)
-	}
 	err := db.finder.find(&deviceInfo, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
 
 // PruneRecords removes records past their deathdate.
 func (db *Connection) PruneRecords(t time.Time) error {
-	err := db.deleter.delete(&Record{}, "death_date < ?", t)
+	rowsAffected, err := db.deleter.delete(&Record{}, "death_date < ?", t)
+	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.WrapWith(err, "Prune records failed", "time", t)
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, deleteType).Add(1.0)
 	return nil
 }
 
 // InsertEvent adds a record to the table.
 func (db *Connection) InsertRecords(records ...Record) error {
-	if len(records) == 0 {
-		return errNoEvents
-	} else if len(records) == 1 {
-		record := records[0]
-		if valid, err := isRecordValid(record); !valid {
-			return emperror.WrapWith(err, "Insert record not attempted", "record", record)
-		}
-		err := db.creator.create(&record)
-		if err != nil {
-			return emperror.WrapWith(err, "Inserting record failed", "record", record)
-		}
-	} else {
-		validRecords := make([]Record, 0)
-		for _, record := range records {
-			if valid, _ := isRecordValid(record); !valid {
-				// ignore, todo:// log it?
-			} else {
-				validRecords = append(validRecords, record)
-			}
-		}
-
-		return db.mutliInsert.insert(validRecords)
+	err := db.mutliInsert.insert(records)
+	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, insertType).Add(1.0)
+		return emperror.WrapWith(err, "Inserting records failed", "records", records)
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, insertType).Add(1.0)
 	return nil
 }
 
 func (db *Connection) Ping() error {
 	err := db.pinger.ping()
 	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, pingType).Add(1.0)
 		return emperror.WrapWith(err, "Pinging connection failed")
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, pingType).Add(1.0)
 	return nil
 }
 
@@ -336,13 +323,6 @@ func (db *Connection) Close() error {
 		return emperror.WrapWith(err, "Closing connection failed")
 	}
 	return nil
-}
-
-func isRecordValid(record Record) (bool, error) {
-	if record.DeviceID == "" {
-		return false, errInvaliddeviceID
-	}
-	return true, nil
 }
 
 func doEvery(d time.Duration, f func()) chan struct{} {
@@ -363,9 +343,12 @@ func doEvery(d time.Duration, f func()) chan struct{} {
 
 // RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
-	err := db.deleter.delete(&Record{})
+	rowsAffected, err := db.deleter.delete(&Record{})
+	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.Wrap(err, "Removing all records from database failed")
 	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, deleteType).Add(1.0)
 	return nil
 }

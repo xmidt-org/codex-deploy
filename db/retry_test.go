@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -31,11 +32,12 @@ func TestRetryInsertRecords(t *testing.T) {
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
 	tests := []struct {
-		description string
-		numCalls    int
-		retries     int
-		finalError  error
-		expectedErr error
+		description         string
+		numCalls            int
+		retries             int
+		expectedRetryMetric float64
+		finalError          error
+		expectedErr         error
 	}{
 		{
 			description: "Initial Success",
@@ -45,11 +47,12 @@ func TestRetryInsertRecords(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "Eventual Success",
-			numCalls:    3,
-			retries:     5,
-			finalError:  nil,
-			expectedErr: nil,
+			description:         "Eventual Success",
+			numCalls:            3,
+			retries:             5,
+			expectedRetryMetric: 2.0,
+			finalError:          nil,
+			expectedErr:         nil,
 		},
 		{
 			description: "Initial Failure",
@@ -59,11 +62,12 @@ func TestRetryInsertRecords(t *testing.T) {
 			expectedErr: failureErr,
 		},
 		{
-			description: "Eventual Failure",
-			numCalls:    4,
-			retries:     3,
-			finalError:  failureErr,
-			expectedErr: failureErr,
+			description:         "Eventual Failure",
+			numCalls:            4,
+			retries:             3,
+			expectedRetryMetric: 3.0,
+			finalError:          failureErr,
+			expectedErr:         failureErr,
 		},
 	}
 	for _, tc := range tests {
@@ -76,6 +80,8 @@ func TestRetryInsertRecords(t *testing.T) {
 			if tc.numCalls > 0 {
 				mockObj.On("InsertRecords", mock.Anything).Return(tc.finalError).Once()
 			}
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 
 			retryInsertService := RetryInsertService{
 				inserter: mockObj,
@@ -85,10 +91,13 @@ func TestRetryInsertRecords(t *testing.T) {
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
+					measures: m,
 				},
 			}
+			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			err := retryInsertService.InsertRecords(Record{})
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQueryRetryCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -107,7 +116,8 @@ func TestCreateRetryInsertService(t *testing.T) {
 		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryInsertService(r.inserter, r.config.retries, r.config.interval)
+	p := xmetricstest.NewProvider(nil, Metrics)
+	newService := CreateRetryInsertService(r.inserter, r.config.retries, r.config.interval, p)
 	assert.Equal(r.inserter, newService.inserter)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
@@ -118,11 +128,12 @@ func TestRetryPruneRecords(t *testing.T) {
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
 	tests := []struct {
-		description string
-		numCalls    int
-		retries     int
-		finalError  error
-		expectedErr error
+		description         string
+		numCalls            int
+		retries             int
+		expectedRetryMetric float64
+		finalError          error
+		expectedErr         error
 	}{
 		{
 			description: "Initial Success",
@@ -132,11 +143,12 @@ func TestRetryPruneRecords(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "Eventual Success",
-			numCalls:    3,
-			retries:     5,
-			finalError:  nil,
-			expectedErr: nil,
+			description:         "Eventual Success",
+			numCalls:            3,
+			retries:             5,
+			expectedRetryMetric: 2.0,
+			finalError:          nil,
+			expectedErr:         nil,
 		},
 		{
 			description: "Initial Failure",
@@ -146,11 +158,12 @@ func TestRetryPruneRecords(t *testing.T) {
 			expectedErr: failureErr,
 		},
 		{
-			description: "Eventual Failure",
-			numCalls:    4,
-			retries:     3,
-			finalError:  failureErr,
-			expectedErr: failureErr,
+			description:         "Eventual Failure",
+			numCalls:            4,
+			retries:             3,
+			expectedRetryMetric: 3.0,
+			finalError:          failureErr,
+			expectedErr:         failureErr,
 		},
 	}
 	for _, tc := range tests {
@@ -163,6 +176,8 @@ func TestRetryPruneRecords(t *testing.T) {
 			if tc.numCalls > 0 {
 				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
 			}
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 
 			retryInsertService := RetryUpdateService{
 				pruner: mockObj,
@@ -172,10 +187,13 @@ func TestRetryPruneRecords(t *testing.T) {
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
+					measures: m,
 				},
 			}
+			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			err := retryInsertService.PruneRecords(time.Now())
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQueryRetryCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -195,7 +213,8 @@ func TestCreateRetryUpdateService(t *testing.T) {
 		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryUpdateService(r.pruner, r.config.retries, r.config.interval)
+	p := xmetricstest.NewProvider(nil, Metrics)
+	newService := CreateRetryUpdateService(r.pruner, r.config.retries, r.config.interval, p)
 	assert.Equal(r.pruner, newService.pruner)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
@@ -206,11 +225,12 @@ func TestRetryGetRecords(t *testing.T) {
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
 	tests := []struct {
-		description string
-		numCalls    int
-		retries     int
-		finalError  error
-		expectedErr error
+		description         string
+		numCalls            int
+		retries             int
+		expectedRetryMetric float64
+		finalError          error
+		expectedErr         error
 	}{
 		{
 			description: "Initial Success",
@@ -220,11 +240,12 @@ func TestRetryGetRecords(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "Eventual Success",
-			numCalls:    3,
-			retries:     5,
-			finalError:  nil,
-			expectedErr: nil,
+			description:         "Eventual Success",
+			numCalls:            3,
+			retries:             5,
+			expectedRetryMetric: 2.0,
+			finalError:          nil,
+			expectedErr:         nil,
 		},
 		{
 			description: "Initial Failure",
@@ -234,11 +255,12 @@ func TestRetryGetRecords(t *testing.T) {
 			expectedErr: failureErr,
 		},
 		{
-			description: "Eventual Failure",
-			numCalls:    4,
-			retries:     3,
-			finalError:  failureErr,
-			expectedErr: failureErr,
+			description:         "Eventual Failure",
+			numCalls:            4,
+			retries:             3,
+			expectedRetryMetric: 3.0,
+			finalError:          failureErr,
+			expectedErr:         failureErr,
 		},
 	}
 	for _, tc := range tests {
@@ -251,17 +273,24 @@ func TestRetryGetRecords(t *testing.T) {
 			if tc.numCalls > 0 {
 				mockObj.On("GetRecords", mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 
 			retryRGService := RetryRGService{
-				rg:       mockObj,
-				retries:  tc.retries,
-				interval: interval,
-				sleep: func(t time.Duration) {
-					assert.Equal(interval, t)
+				rg: mockObj,
+				config: retryConfig{
+					retries:  tc.retries,
+					interval: interval,
+					sleep: func(t time.Duration) {
+						assert.Equal(interval, t)
+					},
+					measures: m,
 				},
 			}
+			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			_, err := retryRGService.GetRecords("")
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -277,11 +306,12 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 	failureErr := errors.New("test final error")
 	interval := 8 * time.Second
 	tests := []struct {
-		description string
-		numCalls    int
-		retries     int
-		finalError  error
-		expectedErr error
+		description         string
+		numCalls            int
+		retries             int
+		expectedRetryMetric float64
+		finalError          error
+		expectedErr         error
 	}{
 		{
 			description: "Initial Success",
@@ -291,11 +321,12 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "Eventual Success",
-			numCalls:    3,
-			retries:     5,
-			finalError:  nil,
-			expectedErr: nil,
+			description:         "Eventual Success",
+			numCalls:            3,
+			retries:             5,
+			expectedRetryMetric: 2.0,
+			finalError:          nil,
+			expectedErr:         nil,
 		},
 		{
 			description: "Initial Failure",
@@ -305,11 +336,12 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			expectedErr: failureErr,
 		},
 		{
-			description: "Eventual Failure",
-			numCalls:    4,
-			retries:     3,
-			finalError:  failureErr,
-			expectedErr: failureErr,
+			description:         "Eventual Failure",
+			numCalls:            4,
+			retries:             3,
+			expectedRetryMetric: 3.0,
+			finalError:          failureErr,
+			expectedErr:         failureErr,
 		},
 	}
 	for _, tc := range tests {
@@ -322,17 +354,24 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			if tc.numCalls > 0 {
 				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
 
 			retryRGService := RetryRGService{
-				rg:       mockObj,
-				retries:  tc.retries,
-				interval: interval,
-				sleep: func(t time.Duration) {
-					assert.Equal(interval, t)
+				rg: mockObj,
+				config: retryConfig{
+					retries:  tc.retries,
+					interval: interval,
+					sleep: func(t time.Duration) {
+						assert.Equal(interval, t)
+					},
+					measures: m,
 				},
 			}
+			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			_, err := retryRGService.GetRecordsOfType("", 0)
 			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -345,13 +384,16 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 
 func TestCreateRetryRGService(t *testing.T) {
 	r := RetryRGService{
-		rg:       new(mockRG),
-		retries:  322,
-		interval: 2 * time.Minute,
+		rg: new(mockRG),
+		config: retryConfig{
+			retries:  322,
+			interval: 2 * time.Minute,
+		},
 	}
 	assert := assert.New(t)
-	newService := CreateRetryRGService(r.rg, r.retries, r.interval)
+	p := xmetricstest.NewProvider(nil, Metrics)
+	newService := CreateRetryRGService(r.rg, r.config.retries, r.config.interval, p)
 	assert.Equal(r.rg, newService.rg)
-	assert.Equal(r.retries, newService.retries)
-	assert.Equal(r.interval, newService.interval)
+	assert.Equal(r.config.retries, newService.config.retries)
+	assert.Equal(r.config.interval, newService.config.interval)
 }
