@@ -28,6 +28,8 @@
 
   authHeader: ["YXV0aEhlYWRlcg=="]
 
+  getRetries: 0
+  retryInterval: 0s
   db:
     server: "db:26257"
     username: "roachadmin"

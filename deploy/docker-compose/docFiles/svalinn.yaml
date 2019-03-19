@@ -27,13 +27,17 @@ log:
   json: true
 
 endpoint: "/device-status"
-queueSize: 3000
-stateLimitPerDevice: 3
+parseQueueSize: 3000
+insertQueueSize: 3000
+maxParseWorkers: 10000
+maxInsertWorkers: 1000
+maxBatchSize: 30
+maxBatchWaitTime: 10ms
 metadataMaxSize: 1000
 payloadMaxSize: 1000
 insertRetries: 0
 pruneRetries: 0
-getRetries: 0
+pruneInterval: 0s
 retryInterval: 10s
 defaultTTL: 1h
 db:

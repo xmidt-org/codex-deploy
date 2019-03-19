@@ -24,6 +24,14 @@ import (
 )
 
 const (
+	typeLabel  = "type"
+	insertType = "insert"
+	deleteType = "delete"
+	readType   = "read"
+	pingType   = "ping"
+)
+
+const (
 	RetryCounter                = "retry_count"
 	ConnectionStatusGauge       = "connection_status"
 	PoolOpenConnectionsGauge    = "pool_open_connections"
@@ -89,19 +97,22 @@ func Metrics() []xmetrics.Metric {
 			Help: "The total number of connections closed due to SetConnMaxLifetime",
 		},
 		{
-			Name: SQLQuerySuccessCounter,
-			Type: "counter",
-			Help: "The total number of successful SQL queries",
+			Name:       SQLQuerySuccessCounter,
+			Type:       "counter",
+			Help:       "The total number of successful SQL queries",
+			LabelNames: []string{typeLabel},
 		},
 		{
-			Name: SQLQueryFailureCounter,
-			Type: "counter",
-			Help: "The total number of failed SQL queries",
+			Name:       SQLQueryFailureCounter,
+			Type:       "counter",
+			Help:       "The total number of failed SQL queries",
+			LabelNames: []string{typeLabel},
 		},
 		{
-			Name: SQLQueryRetryCounter,
-			Type: "counter",
-			Help: "The total number of SQL queries retried",
+			Name:       SQLQueryRetryCounter,
+			Type:       "counter",
+			Help:       "The total number of SQL queries retried",
+			LabelNames: []string{typeLabel},
 		},
 		{
 			Name: SQLDeletedRowsCounter,

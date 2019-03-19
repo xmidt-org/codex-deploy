@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.3]
+ - Fix metrics
+
 ## [v0.2.2]
  - Added SQL query success, failure, and retry metrics
  - Added metric for number of rows deleted
@@ -50,7 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.3...HEAD
+[v0.2.2]: https://github.com/Comcast/codex/compare/v0.2.2...v0.2.3
 [v0.2.2]: https://github.com/Comcast/codex/compare/v0.2.1...v0.2.2
 [v0.2.1]: https://github.com/Comcast/codex/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/Comcast/codex/compare/v0.1.5...v0.2.0

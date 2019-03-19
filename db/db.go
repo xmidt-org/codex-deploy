@@ -33,14 +33,6 @@ var (
 	errNoEvents         = errors.New("no records to be inserted")
 )
 
-const (
-	typeLabel  = "type"
-	insertType = "insert"
-	deleteType = "delete"
-	readType   = "read"
-	pingType   = "ping"
-)
-
 // Config contains the initial configuration information needed to create a db connection.
 type Config struct {
 	Server         string
