@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.4]
+ - Modified record schema in `db` package
+
 ## [v0.2.3]
  - Fix metrics
 
@@ -53,8 +56,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.3...HEAD
-[v0.2.2]: https://github.com/Comcast/codex/compare/v0.2.2...v0.2.3
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.4...HEAD
+[v0.2.4]: https://github.com/Comcast/codex/compare/v0.2.3...v0.2.4
+[v0.2.3]: https://github.com/Comcast/codex/compare/v0.2.2...v0.2.3
 [v0.2.2]: https://github.com/Comcast/codex/compare/v0.2.1...v0.2.2
 [v0.2.1]: https://github.com/Comcast/codex/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/Comcast/codex/compare/v0.1.5...v0.2.0
