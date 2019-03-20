@@ -2,7 +2,7 @@
 
 Codex provides a historical context about devices connected to XMiDT.
 
-[![Build Status](https://travis-ci.org/Comcast/codex.svg?branch=master)](https://travis-ci.org/Comcast/codex)
+[![Build Status](https://travis-ci.com/Comcast/codex.svg?branch=master)](https://travis-ci.com/Comcast/codex)
 [![codecov.io](http://codecov.io/github/Comcast/codex/coverage.svg?branch=master)](http://codecov.io/github/Comcast/codex?branch=master)
 [![Code Climate](https://codeclimate.com/github/Comcast/codex/badges/gpa.svg)](https://codeclimate.com/github/Comcast/codex)
 [![Issue Count](https://codeclimate.com/github/Comcast/codex/badges/issue_count.svg)](https://codeclimate.com/github/Comcast/codex)
