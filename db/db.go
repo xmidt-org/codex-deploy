@@ -129,8 +129,8 @@ type Record struct {
 	ID        int       `json:"id" gorm:"type:bigint;AUTO_INCREMENT"`
 	Type      int       `json:"type"`
 	DeviceID  string    `json:"deviceid" gorm:"not null;index"`
-	BirthDate time.Time `json:"birthdate" gorm:"type:timestamp;not null;index"`
-	DeathDate time.Time `json:"deathdate" gorm:"type:timestamp;not null;index"`
+	BirthDate time.Time `json:"birthdate" gorm:"type:bigint;not null;index"`
+	DeathDate time.Time `json:"deathdate" gorm:"type:bigint;not null;index"`
 	Data      []byte    `json:"data" gorm:"not null"`
 }
 
