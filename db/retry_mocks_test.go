@@ -18,8 +18,6 @@
 package db
 
 import (
-	"time"
-
 	"github.com/stretchr/testify/mock"
 )
 
@@ -36,7 +34,7 @@ type mockPruner struct {
 	mock.Mock
 }
 
-func (p *mockPruner) PruneRecords(t time.Time) error {
+func (p *mockPruner) PruneRecords(t int64) error {
 	args := p.Called(t)
 	return args.Error(0)
 }

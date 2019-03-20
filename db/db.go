@@ -126,12 +126,12 @@ type Event struct {
 }
 
 type Record struct {
-	ID        int       `json:"id" gorm:"type:bigint;AUTO_INCREMENT"`
-	Type      int       `json:"type"`
-	DeviceID  string    `json:"deviceid" gorm:"not null;index"`
-	BirthDate time.Time `json:"birthdate" gorm:"type:bigint;not null;index"`
-	DeathDate time.Time `json:"deathdate" gorm:"type:bigint;not null;index"`
-	Data      []byte    `json:"data" gorm:"not null"`
+	ID        int    `json:"id" gorm:"AUTO_INCREMENT"`
+	Type      int    `json:"type"`
+	DeviceID  string `json:"deviceid" gorm:"not null;index"`
+	BirthDate int64  `json:"birthdate" gorm:"not null;index"`
+	DeathDate int64  `json:"deathdate" gorm:"not null;index"`
+	Data      []byte `json:"data" gorm:"not null"`
 }
 
 // set Record's table name to be `events`
@@ -273,7 +273,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record
 }
 
 // PruneRecords removes records past their deathdate.
-func (db *Connection) PruneRecords(t time.Time) error {
+func (db *Connection) PruneRecords(t int64) error {
 	rowsAffected, err := db.deleter.delete(&Record{}, "death_date < ?", t)
 	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {

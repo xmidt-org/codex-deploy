@@ -36,15 +36,6 @@ func (f *mockFinder) find(out *[]Record, where ...interface{}) error {
 	return args.Error(0)
 }
 
-type mockCreator struct {
-	mock.Mock
-}
-
-func (c *mockCreator) create(value interface{}) error {
-	args := c.Called(value)
-	return args.Error(0)
-}
-
 type mockMultiInsert struct {
 	mock.Mock
 }
