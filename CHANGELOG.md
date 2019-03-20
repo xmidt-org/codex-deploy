@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.6]
+ - Fixed birthdate and deathdate in record schema
+
 ## [v0.2.5]
  - Modified record schema in `db` package
 
@@ -59,7 +62,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.6...HEAD
+[v0.2.6]: https://github.com/Comcast/codex/compare/v0.2.5...v0.2.6
 [v0.2.5]: https://github.com/Comcast/codex/compare/v0.2.4...v0.2.5
 [v0.2.4]: https://github.com/Comcast/codex/compare/v0.2.3...v0.2.4
 [v0.2.3]: https://github.com/Comcast/codex/compare/v0.2.2...v0.2.3

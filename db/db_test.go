@@ -210,7 +210,7 @@ func TestUpdateHistory(t *testing.T) {
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(0.0))
 
-			err := dbConnection.PruneRecords(tc.time)
+			err := dbConnection.PruneRecords(tc.time.Unix())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))

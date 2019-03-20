@@ -73,7 +73,7 @@ func CreateRetryInsertService(inserter Inserter, retries int, interval time.Dura
 }
 
 type Pruner interface {
-	PruneRecords(t time.Time) error
+	PruneRecords(t int64) error
 }
 
 type RetryUpdateService struct {
@@ -81,7 +81,7 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) PruneRecords(t time.Time) error {
+func (ru RetryUpdateService) PruneRecords(t int64) error {
 	var err error
 
 	retries := ru.config.retries

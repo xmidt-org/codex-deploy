@@ -191,7 +191,7 @@ func TestRetryPruneRecords(t *testing.T) {
 				},
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
-			err := retryInsertService.PruneRecords(time.Now())
+			err := retryInsertService.PruneRecords(time.Now().Unix())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
