@@ -126,11 +126,11 @@ type Event struct {
 }
 
 type Record struct {
-	ID        int       `json:"id" gorm:"AUTO_INCREMENT"`
+	ID        int       `json:"id" gorm:"type:bigint;AUTO_INCREMENT"`
 	Type      int       `json:"type"`
 	DeviceID  string    `json:"deviceid" gorm:"not null;index"`
-	BirthDate time.Time `json:"birthdate" gorm:"index"`
-	DeathDate time.Time `json:"deathdate" gorm:"index"`
+	BirthDate time.Time `json:"birthdate" gorm:"type:timestamp;not null;index"`
+	DeathDate time.Time `json:"deathdate" gorm:"type:timestamp;not null;index"`
 	Data      []byte    `json:"data" gorm:"not null"`
 }
 
@@ -163,7 +163,7 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 			"&statement_timeout=" + opTimeout
 	} else {
 		connectionURL = "postgresql://" + config.Username + "@" + config.Server + "/" +
-			config.Database + "?ssl=true&sslmode=verify-full&sslrootcert=" + config.SSLRootCert +
+			config.Database + "?sslmode=verify-full&sslrootcert=" + config.SSLRootCert +
 			"&sslkey=" + config.SSLKey + "&sslcert=" + config.SSLCert + "&connect_timeout=" +
 			connectTimeout + "&statement_timeout=" + opTimeout
 	}

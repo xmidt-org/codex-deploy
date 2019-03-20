@@ -67,9 +67,9 @@ webhook:
   timeout: "1m"
   registrationURL: "https://127.0.0.1:6000/hook"
   eventsToWatch: ["device-status.*"]
-  acquirerConfig:
-    sat:
-      client: ""
-      secret: ""
-      satURL: ""
-      timeout: 5m
+  secret: "super secret"
+  sat:
+    client: ""
+    secret: ""
+    satURL: ""
+    timeout: 5m
