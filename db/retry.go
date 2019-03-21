@@ -115,8 +115,8 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 }
 
 type RecordGetter interface {
-	GetRecords(deviceID string) ([]Record, error)
-	GetRecordsOfType(deviceID string, eventType int) ([]Record, error)
+	GetRecords(deviceID string, limit int) ([]Record, error)
+	GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error)
 }
 
 type RetryRGService struct {
@@ -124,7 +124,7 @@ type RetryRGService struct {
 	config retryConfig
 }
 
-func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
+func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, error) {
 	var (
 		err    error
 		record []Record
@@ -140,7 +140,7 @@ func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
 			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
 			rtg.config.sleep(rtg.config.interval)
 		}
-		if record, err = rtg.rg.GetRecords(deviceID); err == nil {
+		if record, err = rtg.rg.GetRecords(deviceID, limit); err == nil {
 			break
 		}
 	}
@@ -148,7 +148,7 @@ func (rtg RetryRGService) GetRecords(deviceID string) ([]Record, error) {
 	return record, err
 }
 
-func (rtg RetryRGService) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
 	var (
 		err    error
 		record []Record
@@ -164,7 +164,7 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, eventType int) ([]Re
 			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
 			rtg.config.sleep(rtg.config.interval)
 		}
-		if record, err = rtg.rg.GetRecordsOfType(deviceID, eventType); err == nil {
+		if record, err = rtg.rg.GetRecordsOfType(deviceID, limit, eventType); err == nil {
 			break
 		}
 	}

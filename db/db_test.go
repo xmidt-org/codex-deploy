@@ -83,12 +83,12 @@ func TestGetRecords(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 
-			records, err := dbConnection.GetRecords(tc.deviceID)
+			records, err := dbConnection.GetRecords(tc.deviceID, 5)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
@@ -151,12 +151,12 @@ func TestGetRecordsOfType(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 
-			records, err := dbConnection.GetRecordsOfType(tc.deviceID, tc.eventType)
+			records, err := dbConnection.GetRecordsOfType(tc.deviceID, 5, tc.eventType)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))

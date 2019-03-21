@@ -43,12 +43,12 @@ type mockRG struct {
 	mock.Mock
 }
 
-func (rg *mockRG) GetRecords(deviceID string) ([]Record, error) {
-	args := rg.Called(deviceID)
+func (rg *mockRG) GetRecords(deviceID string, limit int) ([]Record, error) {
+	args := rg.Called(deviceID, limit)
 	return args.Get(0).([]Record), args.Error(1)
 }
 
-func (rg *mockRG) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
-	args := rg.Called(deviceID, eventType)
+func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
+	args := rg.Called(deviceID, limit, eventType)
 	return args.Get(0).([]Record), args.Error(1)
 }

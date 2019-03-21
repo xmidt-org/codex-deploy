@@ -28,6 +28,7 @@ import (
 )
 
 var (
+	errTableNotExist    = errors.New("Table does not exist")
 	errInvaliddeviceID  = errors.New("Invalid device ID")
 	errInvalidEventType = errors.New("Invalid event type")
 	errNoEvents         = errors.New("no records to be inserted")
@@ -126,12 +127,12 @@ type Event struct {
 }
 
 type Record struct {
-	ID        int    `json:"id" gorm:"AUTO_INCREMENT"`
+	ID        int    `json:"id"`
 	Type      int    `json:"type"`
-	DeviceID  string `json:"deviceid" gorm:"not null;index"`
-	BirthDate int64  `json:"birthdate" gorm:"not null;index"`
-	DeathDate int64  `json:"deathdate" gorm:"not null;index"`
-	Data      []byte `json:"data" gorm:"not null"`
+	DeviceID  string `json:"deviceid"`
+	BirthDate int64  `json:"birthdate"`
+	DeathDate int64  `json:"deathdate"`
+	Data      []byte `json:"data"`
 }
 
 // set Record's table name to be `events`
@@ -182,7 +183,10 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 		return &Connection{}, emperror.WrapWith(err, "Connecting to database failed", "connection url", connectionURL)
 	}
 
-	conn.AutoMigrate(&Record{})
+	emptyRecord := Record{}
+	if !conn.HasTable(&emptyRecord) {
+		return &Connection{}, emperror.WrapWith(errTableNotExist, "Connecting to database failed", "table name", emptyRecord.TableName())
+	}
 
 	db.finder = conn
 	db.mutliInsert = conn
@@ -245,11 +249,11 @@ func (db *Connection) setupMetrics() {
 }
 
 // GetRecords returns a list of records for a given device
-func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
+func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, "device_id = ?", deviceID)
+	err := db.finder.find(&deviceInfo, limit, "device_id = ?", deviceID)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
@@ -259,11 +263,11 @@ func (db *Connection) GetRecords(deviceID string) ([]Record, error) {
 }
 
 // GetRecords returns a list of records for a given device
-func (db *Connection) GetRecordsOfType(deviceID string, eventType int) ([]Record, error) {
+func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, "device_id = ? AND type = ?", deviceID, eventType)
+	err := db.finder.find(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
