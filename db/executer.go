@@ -30,7 +30,7 @@ import (
 
 type (
 	finder interface {
-		find(out *[]Record, where ...interface{}) error
+		find(out *[]Record, limit int, where ...interface{}) error
 	}
 	multiinserter interface {
 		insert(records []Record) error
@@ -53,8 +53,8 @@ type dbDecorator struct {
 	*gorm.DB
 }
 
-func (b *dbDecorator) find(out *[]Record, where ...interface{}) error {
-	db := b.Order("birth_date desc").Find(out, where...)
+func (b *dbDecorator) find(out *[]Record, limit int, where ...interface{}) error {
+	db := b.Order("birth_date desc").Find(out, where...).Limit(limit)
 	return db.Error
 }
 

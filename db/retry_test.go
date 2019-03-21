@@ -268,10 +268,10 @@ func TestRetryGetRecords(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetRecords", mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetRecords", mock.Anything).Return([]Record{}, tc.finalError).Once()
+				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -288,7 +288,7 @@ func TestRetryGetRecords(t *testing.T) {
 				},
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
-			_, err := retryRGService.GetRecords("")
+			_, err := retryRGService.GetRecords("", 5)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {
@@ -349,10 +349,10 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -369,7 +369,7 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 				},
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
-			_, err := retryRGService.GetRecordsOfType("", 0)
+			_, err := retryRGService.GetRecordsOfType("", 5, 0)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
 			if tc.expectedErr == nil || err == nil {

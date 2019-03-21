@@ -27,8 +27,8 @@ type mockFinder struct {
 	mock.Mock
 }
 
-func (f *mockFinder) find(out *[]Record, where ...interface{}) error {
-	args := f.Called(out, where)
+func (f *mockFinder) find(out *[]Record, limit int, where ...interface{}) error {
+	args := f.Called(out, limit, where)
 	err := json.Unmarshal(args.Get(1).([]byte), out)
 	if err != nil {
 		return err

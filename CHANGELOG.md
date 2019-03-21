@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+ - Removed creating the events table, now we just verify that it exists
+ - Added limit parameter for finding records from the database
 
 ## [v0.2.6]
  - Fixed birthdate and deathdate in record schema
