@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.2.7]
  - Removed creating the events table, now we just verify that it exists
  - Added limit parameter for finding records from the database
 
@@ -64,7 +66,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.7...HEAD
+[v0.2.7]: https://github.com/Comcast/codex/compare/v0.2.6...v0.2.7
 [v0.2.6]: https://github.com/Comcast/codex/compare/v0.2.5...v0.2.6
 [v0.2.5]: https://github.com/Comcast/codex/compare/v0.2.4...v0.2.5
 [v0.2.4]: https://github.com/Comcast/codex/compare/v0.2.3...v0.2.4
