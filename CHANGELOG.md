@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v0.2.7]
  - Removed creating the events table, now we just verify that it exists
  - Added limit parameter for finding records from the database
+ - replaced dep with modules
 
 ## [v0.2.6]
  - Fixed birthdate and deathdate in record schema
