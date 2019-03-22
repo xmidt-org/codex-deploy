@@ -54,7 +54,7 @@ type dbDecorator struct {
 }
 
 func (b *dbDecorator) find(out *[]Record, limit int, where ...interface{}) error {
-	db := b.Order("birth_date desc").Find(out, where...).Limit(limit)
+	db := b.Order("birth_date desc").Limit(limit).Find(out, where...)
 	return db.Error
 }
 

@@ -28,6 +28,7 @@
 
   authHeader: ["YXV0aEhlYWRlcg=="]
 
+  getLimit: 2
   getRetries: 0
   retryInterval: 0s
   db:
