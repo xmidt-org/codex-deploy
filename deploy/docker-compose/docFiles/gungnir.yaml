@@ -1,15 +1,6 @@
 ---
   primary:
     address: ":7000"
-  health:
-    address: ":7001"
-    options:
-      - "PayloadsOverZero"
-      - "PayloadsOverHundred"
-      - "PayloadsOverThousand"
-      - "PayloadsOverTenThousand"
-    readTimeout: "15s"
-    idleTimeout: "15s"
   pprof:
     address: ":7002"
     readTimeout: "15s"
@@ -28,6 +19,9 @@
 
   authHeader: ["YXV0aEhlYWRlcg=="]
 
+  health:
+    port: :7001
+    endpoint: /health
   getLimit: 2
   getRetries: 0
   retryInterval: 0s
@@ -37,5 +31,6 @@
     database: "devices"
     numRetries: 4
     waitTimeMult: 5
+    pingInterval: 1s
     connectTimeout: 1m
     opTimeout: 100ms

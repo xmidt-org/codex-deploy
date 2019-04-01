@@ -203,7 +203,7 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	db.gennericDB = conn.DB.DB()
 	db.measures = NewMeasures(provider)
 
-	db.setupHealthCheck()
+	db.setupHealthCheck(config.PingInterval)
 	db.setupMetrics()
 	db.configure(config.MaxIdleConns, config.MaxOpenConns)
 
@@ -218,7 +218,7 @@ func (db *Connection) configure(maxIdleConns int, maxOpenConns int) {
 	db.gennericDB.SetMaxOpenConns(maxOpenConns)
 }
 
-func (db *Connection) setupHealthCheck() {
+func (db *Connection) setupHealthCheck(interval time.Duration) {
 	if db.health == nil {
 		return
 	}
@@ -232,7 +232,7 @@ func (db *Connection) setupHealthCheck() {
 	db.health.AddCheck(&health.Config{
 		Name:     "sql-check",
 		Checker:  sqlCheck,
-		Interval: time.Duration(1) * time.Second,
+		Interval: interval,
 		Fatal:    true,
 	})
 }
