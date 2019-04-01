@@ -33,7 +33,6 @@ const (
 
 const (
 	RetryCounter                = "retry_count"
-	ConnectionStatusGauge       = "connection_status"
 	PoolOpenConnectionsGauge    = "pool_open_connections"
 	PoolInUseConnectionsGauge   = "pool_in_use_connections"
 	PoolIdleConnectionsGauge    = "pool_idle_connections"
@@ -55,11 +54,6 @@ func Metrics() []xmetrics.Metric {
 			Name: RetryCounter,
 			Type: "counter",
 			Help: "Indicates the number of retries for sql queries",
-		},
-		{
-			Name: ConnectionStatusGauge,
-			Type: "gauge",
-			Help: "Indicates whether a sql connection is currently running",
 		},
 		{
 			Name: PoolOpenConnectionsGauge,
@@ -124,7 +118,6 @@ func Metrics() []xmetrics.Metric {
 
 type Measures struct {
 	Retry                xmetrics.Incrementer
-	ConnectionStatus     metrics.Gauge
 	PoolOpenConnections  metrics.Gauge
 	PoolInUseConnections metrics.Gauge
 	PoolIdleConnections  metrics.Gauge
@@ -142,7 +135,6 @@ type Measures struct {
 func NewMeasures(p provider.Provider) Measures {
 	return Measures{
 		Retry:                xmetrics.NewIncrementer(p.NewCounter(RetryCounter)),
-		ConnectionStatus:     p.NewGauge(ConnectionStatusGauge),
 		PoolOpenConnections:  p.NewGauge(PoolOpenConnectionsGauge),
 		PoolInUseConnections: p.NewGauge(PoolInUseConnectionsGauge),
 		PoolIdleConnections:  p.NewGauge(PoolIdleConnectionsGauge),

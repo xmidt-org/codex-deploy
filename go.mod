@@ -5,6 +5,8 @@ go 1.12
 require (
 	github.com/Comcast/webpa-common v0.0.0-20190312224005-400bb4f8fc50
 	github.com/DATA-DOG/godog v0.7.13
+	github.com/InVisionApp/go-health v2.1.0+incompatible
+	github.com/InVisionApp/go-logger v1.0.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect

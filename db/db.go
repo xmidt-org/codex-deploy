@@ -25,6 +25,9 @@ import (
 
 	"github.com/go-kit/kit/metrics/provider"
 	"github.com/goph/emperror"
+
+	"github.com/InVisionApp/go-health"
+	"github.com/InVisionApp/go-health/checkers"
 )
 
 var (
@@ -66,6 +69,7 @@ type Connection struct {
 	stats       stats
 	gennericDB  *sql.DB
 
+	health      *health.Health
 	measures    Measures
 	stopThreads []chan struct{}
 }
@@ -141,14 +145,16 @@ func (Record) TableName() string {
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
-func CreateDbConnection(config Config, provider provider.Provider) (*Connection, error) {
+func CreateDbConnection(config Config, provider provider.Provider, health *health.Health) (*Connection, error) {
 	var (
 		conn          *dbDecorator
 		err           error
 		connectionURL string
 	)
 
-	db := Connection{}
+	db := Connection{
+		health: health,
+	}
 
 	// pq expects seconds
 	connectTimeout := strconv.Itoa(int(config.ConnectTimeout.Seconds()))
@@ -197,6 +203,7 @@ func CreateDbConnection(config Config, provider provider.Provider) (*Connection,
 	db.gennericDB = conn.DB.DB()
 	db.measures = NewMeasures(provider)
 
+	db.setupHealthCheck(config.PingInterval)
 	db.setupMetrics()
 	db.configure(config.MaxIdleConns, config.MaxOpenConns)
 
@@ -211,18 +218,26 @@ func (db *Connection) configure(maxIdleConns int, maxOpenConns int) {
 	db.gennericDB.SetMaxOpenConns(maxOpenConns)
 }
 
-func (db *Connection) setupMetrics() {
-	// ping to check status
-	pingStop := doEvery(time.Second, func() {
-		err := db.Ping()
-		if err != nil {
-			db.measures.ConnectionStatus.Set(0.0)
-		} else {
-			db.measures.ConnectionStatus.Set(1.0)
-		}
+func (db *Connection) setupHealthCheck(interval time.Duration) {
+	if db.health == nil {
+		return
+	}
+	sqlCheck, err := checkers.NewSQL(&checkers.SQLConfig{
+		Pinger: db.gennericDB,
 	})
-	db.stopThreads = append(db.stopThreads, pingStop)
+	if err != nil {
+		// todo: capture this error somehow
+	}
 
+	db.health.AddCheck(&health.Config{
+		Name:     "sql-check",
+		Checker:  sqlCheck,
+		Interval: interval,
+		Fatal:    true,
+	})
+}
+
+func (db *Connection) setupMetrics() {
 	// baseline
 	startStats := db.stats.getStats()
 	prevWaitCount := startStats.WaitCount
