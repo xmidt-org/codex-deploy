@@ -33,6 +33,17 @@ services:
     depends_on:
       - db
 
+  svalinn:
+    image: fenrir:${FENRIR_VERSION}
+    container_name: fenrir
+    restart: on-failure
+    volumes:
+      - ./docFiles/fenrir.yaml:/etc/fenrir/fenrir.yaml
+    networks:
+      - back-tier
+    depends_on:
+      - db
+
   db:
     image: cockroachdb/cockroach:v2.1.4
     container_name: db

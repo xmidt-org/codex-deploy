@@ -20,8 +20,8 @@
   authHeader: ["YXV0aEhlYWRlcg=="]
 
   health:
-    port: :7001
-    endpoint: /health
+    port: ":7001"
+    endpoint: "/health"
   getLimit: 2
   getRetries: 0
   retryInterval: 0s

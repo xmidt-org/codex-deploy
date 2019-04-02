@@ -1,0 +1,24 @@
+---
+metric:
+  address: ":7203"
+  metricsOptions:
+    namespace: "webpa"
+    subsystem: "tr1d1um"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+log:
+  file: "stdout"
+  level: "DEBUG"
+  json: true
+
+pruneInterval: 10s
+pruneRetries: 0
+retryInterval: 0s
+db:
+  server: "db:26257"
+  username: "roachadmin"
+  database: "devices"
+  numRetries: 4
+  waitTimeMult: 5
+  connectTimeout: 1m
+  opTimeout: 30s
