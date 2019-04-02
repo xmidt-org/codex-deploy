@@ -1,15 +1,6 @@
 ---
 primary:
   address: ":7100"
-health:
-  address: ":7101"
-  options:
-    - "PayloadsOverZero"
-    - "PayloadsOverHundred"
-    - "PayloadsOverThousand"
-    - "PayloadsOverTenThousand"
-  readTimeout: "15s"
-  idleTimeout: "15s"
 pprof:
   address: ":7102"
   readTimeout: "15s"
@@ -23,7 +14,7 @@ metric:
   idleTimeout: "15s"
 log:
   file: "stdout"
-  level: "INFO"
+  level: "DEBUG"
   json: true
 
 endpoint: "/device-status"
@@ -40,12 +31,16 @@ pruneRetries: 0
 pruneInterval: 0s
 retryInterval: 10s
 defaultTTL: 1h
+health:
+  port: ":7101"
+  endpoint: "/health"
 db:
   server: "db:26257"
   username: "roachadmin"
   database: "devices"
   numRetries: 4
   waitTimeMult: 5
+  pingInterval: 1s
   connectTimeout: 1m
   opTimeout: 100ms
 regexRules:
