@@ -56,7 +56,8 @@ func NewBasicHashLoader(options map[string]crypto.Hash) HashLoader {
         HashMap: options,
     }
 
-func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
+func (b *BasicHashLoader) GetHash(hash string) (crypto.Hash, error) {
+	if elem, ok := b.HashMap[strings.ToUpper(hash)]; ok {
 	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
 		return elem, nil
 	}
