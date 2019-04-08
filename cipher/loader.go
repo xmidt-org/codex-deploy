@@ -51,11 +51,6 @@ type BasicHashLoader struct {
 	HashName string
 }
 
-func NewBasicHashLoader(options map[string]crypto.Hash) HashLoader {
-    return BasicHashLoader{
-        HashMap: options,
-    }
-
 func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
 	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
 		return elem, nil
