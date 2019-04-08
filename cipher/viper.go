@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"errors"
 	"github.com/spf13/viper"
 )
 
@@ -12,7 +13,11 @@ type LocalCerts struct {
 func Load(v *viper.Viper) (LoadConfig, error) {
 
 	config := new(LocalCerts)
-	err := v.Sub("cipher").Unmarshal(config)
+	ciperViper := v.Sub("cipher")
+	if ciperViper == nil {
+		return LoadConfig{}, errors.New("no cipher to load")
+	}
+	err := ciperViper.Unmarshal(config)
 	if err != nil {
 		return LoadConfig{}, err
 	}

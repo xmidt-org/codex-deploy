@@ -12,6 +12,7 @@ services:
       - 7003:7003
     volumes:
       - ./docFiles/gungnir.yaml:/etc/gungnir/gungnir.yaml
+      - ./docFiles/private.pem:/etc/svalinn/private.pem
     networks:
       - back-tier
     depends_on:
@@ -28,12 +29,13 @@ services:
       - 7103:7103
     volumes:
       - ./docFiles/svalinn.yaml:/etc/svalinn/svalinn.yaml
+      - ./docFiles/public.pem:/etc/svalinn/public.pem
     networks:
       - back-tier
     depends_on:
       - db
 
-  svalinn:
+  fenrir:
     image: fenrir:${FENRIR_VERSION}
     container_name: fenrir
     restart: on-failure
@@ -58,16 +60,16 @@ services:
       - ./certs:/cockroach/certs
 
   db-init:
-   image: cockroachdb/cockroach:v2.1.4
-   container_name: db-init
-   networks:
-    - back-tier
-   volumes:
-     - ./setup_db.sh:/setup_db.sh
-   entrypoint: "/bin/bash"
-   command: /setup_db.sh
-   depends_on:
-    - db
+    image: cockroachdb/cockroach:v2.1.4
+    container_name: db-init
+    networks:
+      - back-tier
+    volumes:
+      - ./setup_db.sh:/setup_db.sh
+    entrypoint: "/bin/bash"
+    command: /setup_db.sh
+    depends_on:
+      - db
 
 networks:
   back-tier:

@@ -34,3 +34,8 @@
     pingInterval: 1s
     connectTimeout: 1m
     opTimeout: 100ms
+
+
+cipher:
+  hashName: "BLAKE2B512"
+  path: "/public.pem"
