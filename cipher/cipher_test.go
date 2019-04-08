@@ -29,16 +29,18 @@ func TestBasicEncrypt(t *testing.T) {
 	key := GeneratePrivateKey(2048)
 	assert.NotNil(key)
 
-	crypter := NewCrypter(crypto.BLAKE2b_512, key)
-	assert.NotEmpty(crypter)
+	publicCrypter := NewPublicCrypter(crypto.BLAKE2b_512, &key.PublicKey)
+	assert.NotEmpty(publicCrypter)
+	privateCrypter := NewPrivateCrypter(crypto.BLAKE2b_512, key)
+	assert.NotEmpty(privateCrypter)
 
 	message := []byte("Hello World")
 
-	encodedMSG, err := crypter.EncryptMessage(message)
+	encodedMSG, err := publicCrypter.EncryptMessage(message)
 	assert.NoError(err)
 	assert.NotEmpty(encodedMSG)
 
-	msg, err := crypter.DecryptMessage(encodedMSG)
+	msg, err := privateCrypter.DecryptMessage(encodedMSG)
 	assert.NoError(err)
 	assert.Equal(message, msg)
 }
@@ -49,12 +51,12 @@ func TestLargeKey(t *testing.T) {
 	key := GeneratePrivateKey(^int(0))
 	assert.NotNil(key)
 
-	crypter := NewCrypter(crypto.SHA1, key)
-	assert.NotEmpty(crypter)
+	publicCrypter := NewPublicCrypter(crypto.SHA1, &key.PublicKey)
+	assert.NotEmpty(publicCrypter)
 
 	message := []byte("Hello World")
 
-	_, err := crypter.EncryptMessage(message)
+	_, err := publicCrypter.EncryptMessage(message)
 	assert.Error(err)
 }
 
@@ -64,12 +66,12 @@ func TestSmallKey(t *testing.T) {
 	key := GeneratePrivateKey(64)
 	assert.NotNil(key)
 
-	crypter := NewCrypter(crypto.SHA512, key)
-	assert.NotEmpty(crypter)
+	publicCrypter := NewPublicCrypter(crypto.SHA512, &key.PublicKey)
+	assert.NotEmpty(publicCrypter)
 
 	message := []byte("Hello World")
 
-	_, err := crypter.EncryptMessage(message)
+	_, err := publicCrypter.EncryptMessage(message)
 	assert.Error(err)
 }
 
@@ -79,18 +81,27 @@ type testData struct {
 }
 
 func TestCrypters(t *testing.T) {
-	sha512 := NewCrypter(crypto.SHA512, GeneratePrivateKey(2048))
-	blake512 := NewCrypter(crypto.BLAKE2b_512, GeneratePrivateKey(2048))
-	largeMD5 := NewCrypter(crypto.MD5, GeneratePrivateKey(4096))
+	keyA := GeneratePrivateKey(2048)
+	sha512 := NewPublicCrypter(crypto.SHA512, &keyA.PublicKey)
+	sha512Private := NewPrivateCrypter(crypto.SHA512, keyA)
+
+	keyB := GeneratePrivateKey(2048)
+	blake512 := NewPublicCrypter(crypto.BLAKE2b_512, &keyB.PublicKey)
+	blake512Private := NewPrivateCrypter(crypto.BLAKE2b_512, keyB)
+
+	keyC := GeneratePrivateKey(4096)
+	largeMD5 := NewPublicCrypter(crypto.BLAKE2b_512, &keyC.PublicKey)
+	largeMD5Private := NewPrivateCrypter(crypto.BLAKE2b_512, keyC)
 
 	crpyters := []struct {
-		crypter Interface
-		name    string
+		publicCrypter  PublicKeyCipher
+		privateCrypter PrivateKeyCipher
+		name           string
 	}{
-		{new(NOOP), "noop"},
-		{sha512, "sha512"},
-		{blake512, "blake512"},
-		{largeMD5, "largeMD5"},
+		{new(NOOP), new(NOOP), "noop"},
+		{sha512, sha512Private, "sha512"},
+		{blake512, blake512Private, "blake512"},
+		{largeMD5, largeMD5Private, "largeMD5"},
 	}
 
 	testData := []testData{
@@ -101,12 +112,12 @@ func TestCrypters(t *testing.T) {
 
 	for _, c := range crpyters {
 		t.Run(c.name, func(t *testing.T) {
-			testCrypterOrder(t, c.crypter, testData)
+			testCrypterOrder(t, c.publicCrypter, c.privateCrypter, testData)
 		})
 	}
 }
 
-func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
+func testCrypterOrder(t *testing.T, publicCipher PublicKeyCipher, privateCipher PrivateKeyCipher, data []testData) {
 	assert := assert.New(t)
 
 	encodedMSGS := make([][]byte, len(data))
@@ -114,7 +125,7 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 
 	for index, item := range data {
 		// Encode Message
-		encodedMSG, err := crypter.EncryptMessage([]byte(item.message))
+		encodedMSG, err := publicCipher.EncryptMessage([]byte(item.message))
 		if err != nil && item.expectedErr {
 			assert.Empty(encodedMSG)
 			assert.Contains(err.Error(), "too long for RSA public key size")
@@ -125,7 +136,7 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 		encodedMSGS[index] = encodedMSG
 
 		// Sign Message
-		signature, err := crypter.Sign([]byte(item.message))
+		signature, err := privateCipher.Sign([]byte(item.message))
 		assert.NoError(err)
 		assert.NotEmpty(signature)
 		signatures[index] = signature
@@ -137,12 +148,12 @@ func testCrypterOrder(t *testing.T, crypter Interface, data []testData) {
 			continue
 		}
 		// Decode Message
-		msg, err := crypter.DecryptMessage(encodedMSG)
+		msg, err := privateCipher.DecryptMessage(encodedMSG)
 		assert.NoError(err)
 		assert.Equal([]byte(data[index].message), msg)
 
 		// Verify Message
-		verified := crypter.VerifyMessage(msg, signatures[index])
+		verified := publicCipher.VerifyMessage(msg, signatures[index])
 		assert.True(verified)
 	}
 }

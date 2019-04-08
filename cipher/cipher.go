@@ -41,29 +41,41 @@ func init() {
 	})
 }
 
-// I the Interface for cipher to encrypt decrypt and verify the message
-type Interface interface {
-	Crypt
+// PrivateKeyCipher handles functionality provided with a publicKey
+type PublicKeyCipher interface {
+	Enrypt
 	Verify
 }
 
-// Crypt represents the ability to encrypt and decrypt messages
-type Crypt interface {
+// PrivateKeyCipher handles functionality provided with a privateKey
+type PrivateKeyCipher interface {
+	Decrypt
+	Sign
+}
+
+// Enrypt represents the ability to encrypt messages
+type Enrypt interface {
 	// EncryptMessage attempts to encode the message into an array of bytes.
 	// and error will be returned if failed to encode the message.
 	EncryptMessage(message []byte) ([]byte, error)
+}
 
+// Decrypt represents the ability to decrypt messages
+type Decrypt interface {
 	// DecryptMessage attempts to decode the message into a string.
 	// and error will be returned if failed to decode the message.
 	DecryptMessage(cipher []byte) ([]byte, error)
 }
 
-// Verify is used to sign and verify the signature of a message
-type Verify interface {
+// Sign is used to sign the signature of a message
+type Sign interface {
 	// Sign attempts to sign the message into an array of bytes
 	// and an error will be returned if a failure is encountered while signing the message.
 	Sign(message []byte) ([]byte, error)
+}
 
+// Verify is used to sign and verify the signature of a message
+type Verify interface {
 	// VerifyMessage will return true if the message was successfully verified
 	VerifyMessage(message []byte, signature []byte) bool
 }
@@ -122,11 +134,17 @@ type crypter struct {
 	label      []byte
 }
 
-func NewCrypter(hash crypto.Hash, key *rsa.PrivateKey) Interface {
+func NewPrivateCrypter(hash crypto.Hash, key *rsa.PrivateKey) PrivateKeyCipher {
 	return &crypter{
 		privateKey: key,
-		publicKey:  &key.PublicKey,
 		hasher:     hash,
+	}
+}
+
+func NewPublicCrypter(hash crypto.Hash, key *rsa.PublicKey) PublicKeyCipher {
+	return &crypter{
+		publicKey: key,
+		hasher:    hash,
 	}
 }
 
