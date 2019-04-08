@@ -1,0 +1,6 @@
+{
+  "cipher": {
+    "hashName": "SHA1",
+    "path": "private.pem"
+  }
+}

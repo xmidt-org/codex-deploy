@@ -43,6 +43,26 @@ func GetHash(hashType string) crypto.Hash {
 	return crypto.BLAKE2b_512
 }
 
+type HashLoader interface {
+	GetHash() (crypto.Hash, error)
+}
+
+type BasicHashLoader struct {
+	HashName string
+}
+
+// GetHash return the given hash from hashFunctions if not found it will return an error.
+//   0 is an invalid hash
+func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
+	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
+		if elem.Available() {
+			return elem, nil
+		}
+		return 0, errors.New("hash " + b.HashName + " is not linked in binary")
+	}
+	return 0, errors.New("hashname " + b.HashName + " not found")
+}
+
 type KeyLoader interface {
 	GetBytes() ([]byte, error)
 }
@@ -55,8 +75,8 @@ func (f *FileLoader) GetBytes() ([]byte, error) {
 	return ioutil.ReadFile(f.Path)
 }
 
-type Config struct {
-	Hash string
+type LoadConfig struct {
+	Hash HashLoader
 	Key  KeyLoader
 }
 
@@ -104,8 +124,11 @@ func getPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	}
 }
 
-func LoadPublicKey(config Config) (PublicKeyCipher, error) {
-	hashFunc := GetHash(config.Hash)
+func LoadPublicKey(config LoadConfig) (PublicKeyCipher, error) {
+	hashFunc, err := config.Hash.GetHash()
+	if err != nil {
+		return nil, err
+	}
 
 	key, err := getPublicKey(config.Key)
 	if err != nil {
@@ -114,8 +137,11 @@ func LoadPublicKey(config Config) (PublicKeyCipher, error) {
 	return NewPublicCrypter(hashFunc, key), nil
 }
 
-func LoadPrivateKey(config Config) (PrivateKeyCipher, error) {
-	hashFunc := GetHash(config.Hash)
+func LoadPrivateKey(config LoadConfig) (PrivateKeyCipher, error) {
+	hashFunc, err := config.Hash.GetHash()
+	if err != nil {
+		return nil, err
+	}
 
 	key, err := getPrivateKey(config.Key)
 	if err != nil {

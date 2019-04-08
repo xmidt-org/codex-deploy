@@ -23,17 +23,14 @@ import (
 	"testing"
 )
 
-func TestLoadPublicKey(t *testing.T) {
-
-}
 func TestCipherLoader(t *testing.T) {
 	assert := assert.New(t)
 
 	dir, err := os.Getwd()
 	assert.NoError(err)
 
-	privateCrypter, err := LoadPrivateKey(Config{
-		Hash: "SHA512",
+	privateCrypter, err := LoadPrivateKey(LoadConfig{
+		Hash: &BasicHashLoader{HashName: "SHA512"},
 		Key: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
 		},
@@ -41,8 +38,8 @@ func TestCipherLoader(t *testing.T) {
 	assert.NotEmpty(privateCrypter)
 	assert.NoError(err)
 
-	publicCrypter, err := LoadPublicKey(Config{
-		Hash: "SHA512",
+	publicCrypter, err := LoadPublicKey(LoadConfig{
+		Hash: &BasicHashLoader{HashName: "SHA512"},
 		Key: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "public.pem",
 		},
