@@ -68,3 +68,8 @@ webhook:
     secret: ""
     satURL: ""
     timeout: 5m
+
+
+cipher:
+  hashName: "BLAKE2B512"
+  path: "/public.pem"
