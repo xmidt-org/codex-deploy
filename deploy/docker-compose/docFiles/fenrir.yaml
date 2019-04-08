@@ -19,6 +19,7 @@ db:
   username: "roachadmin"
   database: "devices"
   numRetries: 4
+  pruneLimit: 1000
   waitTimeMult: 5
   connectTimeout: 1m
   opTimeout: 30s
