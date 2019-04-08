@@ -55,10 +55,10 @@ type BasicHashLoader struct {
 //   0 is an invalid hash
 func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
 	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
-		if elem.Available(){
+		if elem.Available() {
 			return elem, nil
 		}
-		return 0, errors.New("hash "+ b.HashName +" is not linked in binary")
+		return 0, errors.New("hash " + b.HashName + " is not linked in binary")
 	}
 	return 0, errors.New("hashname " + b.HashName + " not found")
 }
