@@ -46,6 +46,7 @@ type Config struct {
 	SSLKey         string
 	SSLCert        string
 	NumRetries     int
+	PruneLimit     int
 	WaitTimeMult   time.Duration
 	ConnectTimeout time.Duration
 	OpTimeout      time.Duration
@@ -69,6 +70,7 @@ type Connection struct {
 	stats       stats
 	gennericDB  *sql.DB
 
+	pruneLimit  int
 	health      *health.Health
 	measures    Measures
 	stopThreads []chan struct{}
@@ -153,7 +155,8 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	)
 
 	db := Connection{
-		health: health,
+		health:     health,
+		pruneLimit: config.PruneLimit,
 	}
 
 	// pq expects seconds
@@ -293,7 +296,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 
 // PruneRecords removes records past their deathdate.
 func (db *Connection) PruneRecords(t int64) error {
-	rowsAffected, err := db.deleter.delete(&Record{}, "death_date < ?", t)
+	rowsAffected, err := db.deleter.delete(&Record{}, db.pruneLimit, "death_date < ?", t)
 	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
@@ -354,7 +357,7 @@ func doEvery(d time.Duration, f func()) chan struct{} {
 
 // RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
-	rowsAffected, err := db.deleter.delete(&Record{})
+	rowsAffected, err := db.deleter.delete(&Record{}, 0)
 	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)

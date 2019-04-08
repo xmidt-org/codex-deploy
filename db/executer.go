@@ -36,7 +36,7 @@ type (
 		insert(records []Record) error
 	}
 	deleter interface {
-		delete(value *Record, where ...interface{}) (int64, error)
+		delete(value *Record, limit int, where ...interface{}) (int64, error)
 	}
 	pinger interface {
 		ping() error
@@ -105,8 +105,13 @@ func (b *dbDecorator) insert(records []Record) error {
 	return nil
 }
 
-func (b *dbDecorator) delete(value *Record, where ...interface{}) (int64, error) {
-	db := b.Delete(value, where...)
+func (b *dbDecorator) delete(value *Record, limit int, where ...interface{}) (int64, error) {
+	var db *gorm.DB
+	if limit > 0 {
+		db = b.Limit(limit).Delete(value, where...)
+	} else {
+		db = b.Delete(value, where...)
+	}
 	return db.RowsAffected, db.Error
 }
 
