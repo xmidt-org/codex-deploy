@@ -202,10 +202,11 @@ func TestUpdateHistory(t *testing.T) {
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
 			dbConnection := Connection{
-				deleter:  mockObj,
-				measures: m,
+				deleter:    mockObj,
+				measures:   m,
+				pruneLimit: 3,
 			}
-			mockObj.On("delete", mock.Anything, mock.Anything).Return(6, tc.pruneErr).Once()
+			mockObj.On("delete", mock.Anything, 3, mock.Anything).Return(6, tc.pruneErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(0.0))
@@ -312,7 +313,7 @@ func TestRemoveAll(t *testing.T) {
 				measures: m,
 				deleter:  mockObj,
 			}
-			mockObj.On("delete", mock.Anything, mock.Anything).Return(6, tc.expectedErr).Once()
+			mockObj.On("delete", mock.Anything, 0, mock.Anything).Return(6, tc.expectedErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLDeletedRowsCounter)(xmetricstest.Value(0.0))

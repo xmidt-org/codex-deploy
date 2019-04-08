@@ -14,7 +14,7 @@ metric:
   idleTimeout: "15s"
 log:
   file: "stdout"
-  level: "DEBUG"
+  level: "INFO"
   json: true
 
 endpoint: "/device-status"
@@ -46,11 +46,11 @@ db:
 regexRules:
   - regex: "device-status/.*/online$"
     storePayload: true
-    ruleTTL: 50h
+    ruleTTL: 1s
     eventType: "state"
   - regex: "device-status/.*/offline$"
     storePayload: true
-    ruleTTL: 50h
+    ruleTTL: 1s
     eventType: "state"
 
 authHeader: ["YXV0aEhlYWRlcg=="]
