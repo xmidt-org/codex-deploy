@@ -51,11 +51,16 @@ type BasicHashLoader struct {
 	HashName string
 }
 
+// GetHash return the given hash from hashFunctions if not found it will return an error.
+//   0 is an invalid hash
 func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
 	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
-		return elem, nil
+		if elem.Available(){
+			return elem, nil
+		}
+		return 0, errors.New("hash "+ b.HashName +" is not linked in binary")
 	}
-	return crypto.BLAKE2b_512, errors.New("hashname " + b.HashName + " not found")
+	return 0, errors.New("hashname " + b.HashName + " not found")
 }
 
 type KeyLoader interface {
