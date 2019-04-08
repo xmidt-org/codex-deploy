@@ -18,12 +18,30 @@
 package cipher
 
 import (
+	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"strings"
 )
+
+var (
+	hashFunctions = map[string]crypto.Hash{
+		"BLAKE2B512": crypto.BLAKE2b_512,
+		"SHA1":       crypto.SHA1,
+		"SHA512":     crypto.SHA512,
+		"MD5":        crypto.MD5,
+	}
+)
+
+func GetHash(hashType string) crypto.Hash {
+	if elem, ok := hashFunctions[strings.ToUpper(hashType)]; ok {
+		return elem
+	}
+	return crypto.BLAKE2b_512
+}
 
 type KeyLoader interface {
 	GetBytes() ([]byte, error)
@@ -87,25 +105,21 @@ func getPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 }
 
 func LoadPublicKey(config Config) (PublicKeyCipher, error) {
-	hashType := GetHash(config.Hash)
-	if hashType == Unknown {
-		return nil, errors.New("unknown hash function: " + config.Hash)
-	}
+	hashFunc := GetHash(config.Hash)
+
 	key, err := getPublicKey(config.Key)
 	if err != nil {
 		return nil, err
 	}
-	return NewPublicCrypter(hashType.GetHash(), key), nil
+	return NewPublicCrypter(hashFunc, key), nil
 }
 
 func LoadPrivateKey(config Config) (PrivateKeyCipher, error) {
-	hashType := GetHash(config.Hash)
-	if hashType == Unknown {
-		return nil, errors.New("unknown hash function: " + config.Hash)
-	}
+	hashFunc := GetHash(config.Hash)
+
 	key, err := getPrivateKey(config.Key)
 	if err != nil {
 		return nil, err
 	}
-	return NewPrivateCrypter(hashType.GetHash(), key), nil
+	return NewPrivateCrypter(hashFunc, key), nil
 }
