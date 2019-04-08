@@ -48,7 +48,7 @@ type HashLoader interface {
 }
 
 type BasicHashLoader struct {
-	HashMap map[string]crypto.Hash
+	HashName string
 }
 
 func NewBasicHashLoader(options map[string]crypto.Hash) HashLoader {
