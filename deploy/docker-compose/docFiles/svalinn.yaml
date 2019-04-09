@@ -71,5 +71,5 @@ webhook:
 
 
 cipher:
-  hashName: "BLAKE2B512"
-  path: "/public.pem"
+  hashName: "MD5"
+  path: "/etc/svalinn/public.pem"
