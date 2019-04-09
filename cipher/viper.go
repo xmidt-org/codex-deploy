@@ -3,6 +3,7 @@ package cipher
 import (
 	"errors"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 type LocalCerts struct {
@@ -10,25 +11,60 @@ type LocalCerts struct {
 	HashName string
 }
 
-func Load(v *viper.Viper) (LoadConfig, error) {
+func LoadPublic(v *viper.Viper) (PublicKeyCipher, error) {
 
 	config := new(LocalCerts)
-	ciperViper := v.Sub("cipher")
-	if ciperViper == nil {
-		return LoadConfig{}, errors.New("no cipher to load")
+	cipherViper := v.Sub("cipher")
+	if cipherViper == nil {
+		return nil, errors.New("no cipher to load")
 	}
-	err := ciperViper.Unmarshal(config)
+	err := cipherViper.Unmarshal(config)
 	if err != nil {
-		return LoadConfig{}, err
+		return nil, err
 	}
 
-	return LoadConfig{
+	// check for noop
+	if strings.ToLower(config.HashName) == "noop" {
+		return new(NOOP), nil
+	}
+
+	loadConfg := LoadConfig{
 		&BasicHashLoader{
 			config.HashName,
 		},
 		&FileLoader{
 			Path: config.Path,
 		},
-	}, nil
+	}
+	return LoadPublicKey(loadConfg)
+
+}
+
+func LoadPrivate(v *viper.Viper) (PrivateKeyCipher, error) {
+
+	config := new(LocalCerts)
+	cipherViper := v.Sub("cipher")
+	if cipherViper == nil {
+		return nil, errors.New("no cipher to load")
+	}
+	err := cipherViper.Unmarshal(config)
+	if err != nil {
+		return nil, err
+	}
+
+	// check for noop
+	if strings.ToLower(config.HashName) == "noop" {
+		return new(NOOP), nil
+	}
+
+	loadConfg := LoadConfig{
+		&BasicHashLoader{
+			config.HashName,
+		},
+		&FileLoader{
+			Path: config.Path,
+		},
+	}
+	return LoadPrivateKey(loadConfg)
 
 }
