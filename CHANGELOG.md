@@ -5,7 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Added basic cipher file loading
+
+## [v0.3.0]
+- Added Fenrir to docker-compose and related files
+- Added basic cipher file loading, with viper
+- Added prune limit
+- Removed `Event` struct from `db` package
 
 ## [v0.2.9]
  - Added logger wrapper for health
@@ -74,7 +79,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.2.9...HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.3.0...HEAD
+[v0.3.0]: https://github.com/Comcast/codex/compare/v0.2.9...v0.3.0
 [v0.2.9]: https://github.com/Comcast/codex/compare/v0.2.8...v0.2.9
 [v0.2.8]: https://github.com/Comcast/codex/compare/v0.2.7...v0.2.8
 [v0.2.7]: https://github.com/Comcast/codex/compare/v0.2.6...v0.2.7
