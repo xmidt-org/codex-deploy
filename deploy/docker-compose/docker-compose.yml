@@ -39,6 +39,8 @@ services:
     image: fenrir:${FENRIR_VERSION}
     container_name: fenrir
     restart: on-failure
+    ports:
+      - 7203:7203
     volumes:
       - ./docFiles/fenrir.yaml:/etc/fenrir/fenrir.yaml
     networks:

@@ -49,8 +49,8 @@ type mockDeleter struct {
 	mock.Mock
 }
 
-func (d *mockDeleter) delete(value *Record, where ...interface{}) (int64, error) {
-	args := d.Called(value, where)
+func (d *mockDeleter) delete(value *Record, limit int, where ...interface{}) (int64, error) {
+	args := d.Called(value, limit, where)
 	return int64(args.Int(0)), args.Error(1)
 }
 
