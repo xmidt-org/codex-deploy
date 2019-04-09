@@ -23,16 +23,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Comcast/webpa-common/wrp"
 	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var (
-	goodEvent = Event{
+	goodEvent = wrp.SimpleEvent{
+		Type:        wrp.SimpleEventMessageType,
 		Source:      "test source",
-		Destination: "test destination",
-		Details:     map[string]interface{}{"test key": "test value"},
+		Destination: "testdestination",
+		Metadata:    map[string]string{"test key": "test value"},
 	}
 )
 
