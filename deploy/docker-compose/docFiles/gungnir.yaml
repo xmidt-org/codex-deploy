@@ -1,41 +1,41 @@
 ---
-  primary:
-    address: ":7000"
-  pprof:
-    address: ":7002"
-    readTimeout: "15s"
-    idleTimeout: "15s"
-  metric:
-    address: ":7003"
-    metricsOptions:
-      namespace: "webpa"
-      subsystem: "tr1d1um"
-    readTimeout: "15s"
-    idleTimeout: "15s"
-  log:
-    file: "stdout"
-    level: "INFO"
-    json: true
+primary:
+  address: ":7000"
+pprof:
+  address: ":7002"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+metric:
+  address: ":7003"
+  metricsOptions:
+    namespace: "webpa"
+    subsystem: "tr1d1um"
+  readTimeout: "15s"
+  idleTimeout: "15s"
+log:
+  file: "stdout"
+  level: "INFO"
+  json: true
 
-  authHeader: ["YXV0aEhlYWRlcg=="]
+authHeader: ["YXV0aEhlYWRlcjp0ZXN0"]
 
-  health:
-    port: ":7001"
-    endpoint: "/health"
-  getLimit: 2
-  getRetries: 0
-  retryInterval: 0s
-  db:
-    server: "db:26257"
-    username: "roachadmin"
-    database: "devices"
-    numRetries: 4
-    waitTimeMult: 5
-    pingInterval: 1s
-    connectTimeout: 1m
-    opTimeout: 100ms
+health:
+  port: ":7001"
+  endpoint: "/health"
+getLimit: 2
+getRetries: 0
+retryInterval: 0s
+db:
+  server: "db:26257"
+  username: "roachadmin"
+  database: "devices"
+  numRetries: 4
+  waitTimeMult: 5
+  pingInterval: 1s
+  connectTimeout: 1m
+  opTimeout: 100ms
 
 
 cipher:
-  hashName: "BLAKE2B512"
-  path: "/public.pem"
+  hashName: "MD5"
+  path: "/etc/gungnir/private.pem"

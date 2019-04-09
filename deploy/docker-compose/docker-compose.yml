@@ -12,7 +12,7 @@ services:
       - 7003:7003
     volumes:
       - ./docFiles/gungnir.yaml:/etc/gungnir/gungnir.yaml
-      - ./docFiles/private.pem:/etc/svalinn/private.pem
+      - ./docFiles/private.pem:/etc/gungnir/private.pem
     networks:
       - back-tier
     depends_on:
