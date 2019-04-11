@@ -66,7 +66,7 @@ func (d *listRefresher) InList(ID string) (string, bool) {
 }
 
 func (d *listRefresher) updateList() {
-	if list, err := d.updater.GetBlacklist(); err != nil {
+	if list, err := d.updater.GetBlacklist(); err == nil {
 		d.cache.UpdateList(list)
 	} else {
 		logging.Error(d.logger).Log(logging.MessageKey(), "failed to update list", logging.ErrorKey(), err)

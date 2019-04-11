@@ -31,9 +31,12 @@ pruneRetries: 0
 pruneInterval: 0s
 retryInterval: 10s
 defaultTTL: 1h
+blacklistInterval: 1m
+
 health:
   port: ":7101"
   endpoint: "/health"
+
 db:
   server: "db:26257"
   username: "roachadmin"
