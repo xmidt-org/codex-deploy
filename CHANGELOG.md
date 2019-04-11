@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Created `db` and `xvault` package
 
 [Unreleased]: https://github.com/Comcast/codex/compare/v0.3.0...HEAD
-[v0.3.0]: https://github.com/Comcast/codex/compare/v0.3.0...v0.3.1
+[v0.3.1]: https://github.com/Comcast/codex/compare/v0.3.0...v0.3.1
 [v0.3.0]: https://github.com/Comcast/codex/compare/v0.2.9...v0.3.0
 [v0.2.9]: https://github.com/Comcast/codex/compare/v0.2.8...v0.2.9
 [v0.2.8]: https://github.com/Comcast/codex/compare/v0.2.7...v0.2.8
