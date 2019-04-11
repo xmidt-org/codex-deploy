@@ -89,6 +89,9 @@ func NewListRefresher(config RefresherConfig, updater Updater, stop chan struct{
 	}
 
 	go func() {
+		// do initial update
+		listDB.updateList()
+
 		ticker := time.NewTicker(config.UpdateInterval)
 		for {
 			select {
