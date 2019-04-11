@@ -22,6 +22,7 @@ import (
 
 	"database/sql"
 	"fmt"
+	"github.com/Comcast/codex/blacklist"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -33,7 +34,7 @@ type (
 		findRecords(out *[]Record, limit int, where ...interface{}) error
 	}
 	findList interface {
-		findBlacklist(out *[]BlacklistedDevice) error
+		findBlacklist(out *[]blacklist.BlackListedItem) error
 	}
 	multiinserter interface {
 		insert(records []Record) error
@@ -61,7 +62,7 @@ func (b *dbDecorator) findRecords(out *[]Record, limit int, where ...interface{}
 	return db.Error
 }
 
-func (b *dbDecorator) findBlacklist(out *[]BlacklistedDevice) error {
+func (b *dbDecorator) findBlacklist(out *[]blacklist.BlackListedItem) error {
 	db := b.Find(out)
 	return db.Error
 }

@@ -92,26 +92,6 @@ func (Record) TableName() string {
 	return "events"
 }
 
-type BlacklistedDevice struct {
-	ID       int    `json:"id"`
-	DeviceID string `json:"deviceid"`
-	Reason   string `json:"reason"`
-}
-
-// set BlacklistedDevice's table name to be `blacklist`
-func (BlacklistedDevice) TableName() string {
-	return "blacklist"
-}
-
-func Convert(list []BlacklistedDevice) []blacklist.BlackListedItem {
-	retVal := make([]blacklist.BlackListedItem, len(list))
-	for index, elem := range list {
-		retVal[index] = blacklist.BlackListedItem{ID: elem.DeviceID, Reason: elem.Reason}
-	}
-
-	return retVal
-}
-
 // CreateDbConnection creates db connection and returns the struct to the consumer.
 func CreateDbConnection(config Config, provider provider.Provider, health *health.Health) (*Connection, error) {
 	var (
@@ -262,19 +242,14 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 }
 
 // GetBlacklist returns a list of blacklisted devices
-func (db *Connection) GetBlacklist() ([]blacklist.BlackListedItem, error) {
-	var (
-		list []BlacklistedDevice
-	)
-
-	err := db.findList.findBlacklist(&list)
+func (db *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
+	err = db.findList.findBlacklist(&list)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, listReadType).Add(1.0)
 		return []blacklist.BlackListedItem{}, emperror.WrapWith(err, "Getting records from database failed")
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, listReadType).Add(1.0)
-
-	return Convert(list), nil
+	return
 }
 
 // PruneRecords removes records past their deathdate.

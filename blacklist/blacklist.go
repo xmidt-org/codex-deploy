@@ -12,6 +12,10 @@ type BlackListedItem struct {
 	Reason string
 }
 
+func (BlackListedItem) TableName() string {
+	return "blacklist"
+}
+
 type List interface {
 	InList(ID string) bool
 }
