@@ -20,6 +20,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"github.com/Comcast/codex/blacklist"
 	"strconv"
 	"time"
 
@@ -63,6 +64,7 @@ type Config struct {
 // Connection contains the tools to edit the database.
 type Connection struct {
 	finder      finder
+	findList    findList
 	mutliInsert multiinserter
 	deleter     deleter
 	closer      closer
@@ -142,6 +144,7 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	}
 
 	db.finder = conn
+	db.findList = conn
 	db.mutliInsert = conn
 	db.deleter = conn
 	db.closer = conn
@@ -215,7 +218,7 @@ func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, limit, "device_id = ?", deviceID)
+	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ?", deviceID)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
@@ -229,13 +232,24 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
+	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
+}
+
+// GetBlacklist returns a list of blacklisted devices
+func (db *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
+	err = db.findList.findBlacklist(&list)
+	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, listReadType).Add(1.0)
+		return []blacklist.BlackListedItem{}, emperror.WrapWith(err, "Getting records from database failed")
+	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, listReadType).Add(1.0)
+	return
 }
 
 // PruneRecords removes records past their deathdate.
