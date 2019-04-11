@@ -69,12 +69,12 @@ func (d *listRefresher) updateList() {
 	}
 }
 
-type RefersherConfig struct {
+type RefresherConfig struct {
 	UpdateInterval time.Duration
 	Logger         log.Logger
 }
 
-func NewListRefresher(config RefersherConfig, updater Updater, stop chan struct{}) List {
+func NewListRefresher(config RefresherConfig, updater Updater, stop chan struct{}) List {
 	if config.Logger == nil {
 		config.Logger = logging.DefaultLogger()
 	}
