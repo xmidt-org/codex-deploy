@@ -62,7 +62,7 @@ type listRefresher struct {
 }
 
 func (d *listRefresher) InList(ID string) (string, bool) {
-	return d.InList(ID)
+	return d.cache.InList(ID)
 }
 
 func (d *listRefresher) updateList() {
