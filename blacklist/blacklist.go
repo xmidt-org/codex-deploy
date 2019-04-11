@@ -1,12 +1,16 @@
 package blacklist
 
 import (
-	"github.com/Comcast/codex/db"
 	"github.com/Comcast/webpa-common/logging"
 	"github.com/go-kit/kit/log"
 	"sync"
 	"time"
 )
+
+type BlackListedItem struct {
+	ID     string
+	Reason string
+}
 
 type List interface {
 	InList(ID string) bool
@@ -17,7 +21,7 @@ type SyncList struct {
 	dataLock sync.RWMutex
 }
 
-func NewEmptyMemList() SyncList {
+func NewEmptySyncList() SyncList {
 	return SyncList{
 		data: make(map[string]string),
 	}
@@ -30,11 +34,11 @@ func (m *SyncList) InList(ID string) (val string, ok bool) {
 	return
 }
 
-func (m *SyncList) UpdateList(data []db.BlacklistedDevice) {
+func (m *SyncList) UpdateList(data []BlackListedItem) {
 
 	newData := make(map[string]string)
 	for _, device := range data {
-		newData[device.DeviceID] = device.Reason
+		newData[device.ID] = device.Reason
 	}
 
 	m.dataLock.Lock()
@@ -42,38 +46,42 @@ func (m *SyncList) UpdateList(data []db.BlacklistedDevice) {
 	m.dataLock.Unlock()
 }
 
-type dbList struct {
-	logger log.Logger
-
-	listGetter db.ListGetter
-	cache      SyncList
+type Updater interface {
+	GetBlacklist() ([]BlackListedItem, error)
 }
 
-func (d *dbList) InList(ID string) bool {
+type listRefresher struct {
+	logger log.Logger
+
+	updater Updater
+	cache   SyncList
+}
+
+func (d *listRefresher) InList(ID string) bool {
 	return d.InList(ID)
 }
 
-func (d *dbList) updateList() {
-	if list, err := d.listGetter.GetBlacklist(); err != nil {
+func (d *listRefresher) updateList() {
+	if list, err := d.updater.GetBlacklist(); err != nil {
 		d.cache.UpdateList(list)
 	} else {
 		logging.Error(d.logger).Log(logging.MessageKey(), "failed to update list", logging.ErrorKey(), err)
 	}
 }
 
-type DBConfig struct {
+type RefersherConfig struct {
 	UpdateInterval time.Duration
 	Logger         log.Logger
 }
 
-func NewDBList(config DBConfig, listRetryGetService db.RetryListGService, stop chan struct{}) List {
+func NewListRefresher(config RefersherConfig, updater Updater, stop chan struct{}) List {
 	if config.Logger == nil {
 		config.Logger = logging.DefaultLogger()
 	}
-	listDB := dbList{
-		logger:     config.Logger,
-		listGetter: listRetryGetService,
-		cache:      NewEmptyMemList(),
+	listDB := listRefresher{
+		logger:  config.Logger,
+		updater: updater,
+		cache:   NewEmptySyncList(),
 	}
 
 	go func() {

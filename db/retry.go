@@ -18,6 +18,7 @@
 package db
 
 import (
+	"github.com/Comcast/codex/blacklist"
 	"time"
 
 	"github.com/go-kit/kit/metrics/provider"
@@ -114,16 +115,12 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 	}
 }
 
-type ListGetter interface {
-	GetBlacklist() ([]BlacklistedDevice, error)
-}
-
 type RetryListGService struct {
-	lg     ListGetter
+	lg     blacklist.Updater
 	config retryConfig
 }
 
-func (ltg RetryListGService) GetBlacklist() (blacklist []BlacklistedDevice, err error) {
+func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
 	retries := ltg.config.retries
 	if retries < 1 {
 		retries = 0
@@ -134,15 +131,15 @@ func (ltg RetryListGService) GetBlacklist() (blacklist []BlacklistedDevice, err 
 			ltg.config.measures.SQLQueryRetryCount.With(typeLabel, listReadType).Add(1.0)
 			ltg.config.sleep(ltg.config.interval)
 		}
-		if blacklist, err = ltg.lg.GetBlacklist(); err == nil {
+		if list, err = ltg.lg.GetBlacklist(); err == nil {
 			break
 		}
 	}
 
-	return blacklist, err
+	return
 }
 
-func CreateRetryListGService(listGetter ListGetter, retries int, interval time.Duration, provider provider.Provider) RetryListGService {
+func CreateRetryListGService(listGetter blacklist.Updater, retries int, interval time.Duration, provider provider.Provider) RetryListGService {
 	return RetryListGService{
 		lg: listGetter,
 		config: retryConfig{

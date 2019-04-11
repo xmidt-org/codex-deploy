@@ -20,6 +20,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"github.com/Comcast/codex/blacklist"
 	"strconv"
 	"time"
 
@@ -100,6 +101,15 @@ type BlacklistedDevice struct {
 // set BlacklistedDevice's table name to be `blacklist`
 func (BlacklistedDevice) TableName() string {
 	return "blacklist"
+}
+
+func Convert(list []BlacklistedDevice) []blacklist.BlackListedItem {
+	retVal := make([]blacklist.BlackListedItem, len(list))
+	for index, elem := range list {
+		retVal[index] = blacklist.BlackListedItem{ID: elem.DeviceID, Reason: elem.Reason}
+	}
+
+	return retVal
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
@@ -252,15 +262,19 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 }
 
 // GetBlacklist returns a list of blacklisted devices
-func (db *Connection) GetBlacklist() (blacklist []BlacklistedDevice, err error) {
+func (db *Connection) GetBlacklist() ([]blacklist.BlackListedItem, error) {
+	var (
+		list []BlacklistedDevice
+	)
 
-	err = db.findList.findBlacklist(&blacklist)
+	err := db.findList.findBlacklist(&list)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, listReadType).Add(1.0)
-		return []BlacklistedDevice{}, emperror.WrapWith(err, "Getting records from database failed")
+		return []blacklist.BlackListedItem{}, emperror.WrapWith(err, "Getting records from database failed")
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, listReadType).Add(1.0)
-	return blacklist, nil
+
+	return Convert(list), nil
 }
 
 // PruneRecords removes records past their deathdate.

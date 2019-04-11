@@ -18,6 +18,7 @@
 package db
 
 import (
+	"github.com/Comcast/codex/blacklist"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -57,7 +58,7 @@ type mockLG struct {
 	mock.Mock
 }
 
-func (rg *mockLG) GetBlacklist() ([]BlacklistedDevice, error) {
+func (rg *mockLG) GetBlacklist() ([]blacklist.BlackListedItem, error) {
 	args := rg.Called()
-	return args.Get(0).([]BlacklistedDevice), args.Error(1)
+	return args.Get(0).([]blacklist.BlackListedItem), args.Error(1)
 }
