@@ -17,7 +17,7 @@ func (BlackListedItem) TableName() string {
 }
 
 type List interface {
-	InList(ID string) bool
+	InList(ID string) (reason string, ok bool)
 }
 
 type SyncList struct {
@@ -31,9 +31,9 @@ func NewEmptySyncList() SyncList {
 	}
 }
 
-func (m *SyncList) InList(ID string) (val string, ok bool) {
+func (m *SyncList) InList(ID string) (reason string, ok bool) {
 	m.dataLock.RLock()
-	val, ok = m.data[ID]
+	reason, ok = m.data[ID]
 	m.dataLock.RUnlock()
 	return
 }
@@ -61,7 +61,7 @@ type listRefresher struct {
 	cache   SyncList
 }
 
-func (d *listRefresher) InList(ID string) bool {
+func (d *listRefresher) InList(ID string) (string, bool) {
 	return d.InList(ID)
 }
 
