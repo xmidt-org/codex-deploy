@@ -57,7 +57,7 @@ type mockLG struct {
 	mock.Mock
 }
 
-func (rg *mockLG) GetBlacklist() ([]BlackDevice, error) {
+func (rg *mockLG) GetBlacklist() ([]BlacklistedDevice, error) {
 	args := rg.Called()
-	return args.Get(0).([]BlackDevice), args.Error(1)
+	return args.Get(0).([]BlacklistedDevice), args.Error(1)
 }

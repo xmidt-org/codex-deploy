@@ -115,7 +115,7 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 }
 
 type ListGetter interface {
-	GetBlacklist() ([]BlackDevice, error)
+	GetBlacklist() ([]BlacklistedDevice, error)
 }
 
 type RetryListGService struct {
@@ -123,7 +123,7 @@ type RetryListGService struct {
 	config retryConfig
 }
 
-func (ltg RetryListGService) GetBlacklist() (blacklist []BlackDevice, err error) {
+func (ltg RetryListGService) GetBlacklist() (blacklist []BlacklistedDevice, err error) {
 	retries := ltg.config.retries
 	if retries < 1 {
 		retries = 0

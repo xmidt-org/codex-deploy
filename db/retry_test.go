@@ -268,10 +268,10 @@ func TestRetryGetBlacklist(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockLG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetBlacklist").Return([]BlackDevice{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetBlacklist").Return([]BlacklistedDevice{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetBlacklist").Return([]BlackDevice{}, tc.finalError).Once()
+				mockObj.On("GetBlacklist").Return([]BlacklistedDevice{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)

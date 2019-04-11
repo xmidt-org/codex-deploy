@@ -85,7 +85,7 @@ func TestGetRecords(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("findRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
@@ -153,7 +153,7 @@ func TestGetRecordsOfType(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("findRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))

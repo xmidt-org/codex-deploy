@@ -12,25 +12,25 @@ type List interface {
 	InList(ID string) bool
 }
 
-type memList struct {
+type SyncList struct {
 	data     map[string]string
 	dataLock sync.RWMutex
 }
 
-func newEmptyMemList() memList {
-	return memList{
+func NewEmptyMemList() SyncList {
+	return SyncList{
 		data: make(map[string]string),
 	}
 }
 
-func (m *memList) InList(ID string) (val string, ok bool) {
+func (m *SyncList) InList(ID string) (val string, ok bool) {
 	m.dataLock.RLock()
 	val, ok = m.data[ID]
 	m.dataLock.RUnlock()
 	return
 }
 
-func (m *memList) updateList(data []db.BlackDevice) {
+func (m *SyncList) UpdateList(data []db.BlacklistedDevice) {
 
 	newData := make(map[string]string)
 	for _, device := range data {
@@ -45,8 +45,8 @@ func (m *memList) updateList(data []db.BlackDevice) {
 type dbList struct {
 	logger log.Logger
 
-	listGetter db.RetryListGService
-	cache      memList
+	listGetter db.ListGetter
+	cache      SyncList
 }
 
 func (d *dbList) InList(ID string) bool {
@@ -55,7 +55,7 @@ func (d *dbList) InList(ID string) bool {
 
 func (d *dbList) updateList() {
 	if list, err := d.listGetter.GetBlacklist(); err != nil {
-		d.cache.updateList(list)
+		d.cache.UpdateList(list)
 	} else {
 		logging.Error(d.logger).Log(logging.MessageKey(), "failed to update list", logging.ErrorKey(), err)
 	}
@@ -73,7 +73,7 @@ func NewDBList(config DBConfig, listRetryGetService db.RetryListGService, stop c
 	listDB := dbList{
 		logger:     config.Logger,
 		listGetter: listRetryGetService,
-		cache:      newEmptyMemList(),
+		cache:      NewEmptyMemList(),
 	}
 
 	go func() {

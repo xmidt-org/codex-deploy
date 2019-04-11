@@ -30,10 +30,10 @@ import (
 
 type (
 	finder interface {
-		find(out *[]Record, limit int, where ...interface{}) error
+		findRecords(out *[]Record, limit int, where ...interface{}) error
 	}
-	listGetter interface {
-		getList(out *[]BlackDevice) error
+	findList interface {
+		findBlacklist(out *[]BlacklistedDevice) error
 	}
 	multiinserter interface {
 		insert(records []Record) error
@@ -56,12 +56,12 @@ type dbDecorator struct {
 	*gorm.DB
 }
 
-func (b *dbDecorator) find(out *[]Record, limit int, where ...interface{}) error {
+func (b *dbDecorator) findRecords(out *[]Record, limit int, where ...interface{}) error {
 	db := b.Order("birth_date desc").Limit(limit).Find(out, where...)
 	return db.Error
 }
 
-func (b *dbDecorator) getList(out *[]BlackDevice) error {
+func (b *dbDecorator) findBlacklist(out *[]BlacklistedDevice) error {
 	db := b.Find(out)
 	return db.Error
 }

@@ -63,7 +63,7 @@ type Config struct {
 // Connection contains the tools to edit the database.
 type Connection struct {
 	finder      finder
-	listGetter  listGetter
+	findList    findList
 	mutliInsert multiinserter
 	deleter     deleter
 	closer      closer
@@ -91,14 +91,14 @@ func (Record) TableName() string {
 	return "events"
 }
 
-type BlackDevice struct {
+type BlacklistedDevice struct {
 	ID       int    `json:"id"`
 	DeviceID string `json:"deviceid"`
 	Reason   string `json:"reason"`
 }
 
-// set BlackDevice's table name to be `blacklist`
-func (BlackDevice) TableName() string {
+// set BlacklistedDevice's table name to be `blacklist`
+func (BlacklistedDevice) TableName() string {
 	return "blacklist"
 }
 
@@ -154,7 +154,7 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	}
 
 	db.finder = conn
-	db.listGetter = conn
+	db.findList = conn
 	db.mutliInsert = conn
 	db.deleter = conn
 	db.closer = conn
@@ -228,7 +228,7 @@ func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, limit, "device_id = ?", deviceID)
+	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ?", deviceID)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
@@ -242,7 +242,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 	var (
 		deviceInfo []Record
 	)
-	err := db.finder.find(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
+	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
@@ -251,13 +251,13 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 	return deviceInfo, nil
 }
 
-// GetRecords returns a list of records for a given device
-func (db *Connection) GetBlackList() (blacklist []BlackDevice, err error) {
+// GetBlacklist returns a list of blacklisted devices
+func (db *Connection) GetBlacklist() (blacklist []BlacklistedDevice, err error) {
 
-	err = db.listGetter.getList(&blacklist)
+	err = db.findList.findBlacklist(&blacklist)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, listReadType).Add(1.0)
-		return []BlackDevice{}, emperror.WrapWith(err, "Getting records from database failed")
+		return []BlacklistedDevice{}, emperror.WrapWith(err, "Getting records from database failed")
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, listReadType).Add(1.0)
 	return blacklist, nil
