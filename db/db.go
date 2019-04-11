@@ -63,6 +63,7 @@ type Config struct {
 // Connection contains the tools to edit the database.
 type Connection struct {
 	finder      finder
+	listGetter  listGetter
 	mutliInsert multiinserter
 	deleter     deleter
 	closer      closer
@@ -88,6 +89,17 @@ type Record struct {
 // set Record's table name to be `events`
 func (Record) TableName() string {
 	return "events"
+}
+
+type BlackDevice struct {
+	ID       int    `json:"id"`
+	DeviceID string `json:"deviceid"`
+	Reason   string `json:"reason"`
+}
+
+// set BlackDevice's table name to be `blacklist`
+func (BlackDevice) TableName() string {
+	return "blacklist"
 }
 
 // CreateDbConnection creates db connection and returns the struct to the consumer.
@@ -142,6 +154,7 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	}
 
 	db.finder = conn
+	db.listGetter = conn
 	db.mutliInsert = conn
 	db.deleter = conn
 	db.closer = conn
@@ -236,6 +249,18 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
+}
+
+// GetRecords returns a list of records for a given device
+func (db *Connection) GetBlackList() (blacklist []BlackDevice, err error) {
+
+	err = db.listGetter.getList(&blacklist)
+	if err != nil {
+		db.measures.SQLQueryFailureCount.With(typeLabel, listReadType).Add(1.0)
+		return []BlackDevice{}, emperror.WrapWith(err, "Getting records from database failed")
+	}
+	db.measures.SQLQuerySuccessCount.With(typeLabel, listReadType).Add(1.0)
+	return blacklist, nil
 }
 
 // PruneRecords removes records past their deathdate.

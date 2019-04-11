@@ -52,3 +52,12 @@ func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType int) ([
 	args := rg.Called(deviceID, limit, eventType)
 	return args.Get(0).([]Record), args.Error(1)
 }
+
+type mockLG struct {
+	mock.Mock
+}
+
+func (rg *mockLG) GetBlacklist() ([]BlackDevice, error) {
+	args := rg.Called()
+	return args.Get(0).([]BlackDevice), args.Error(1)
+}

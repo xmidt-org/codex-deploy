@@ -32,6 +32,9 @@ type (
 	finder interface {
 		find(out *[]Record, limit int, where ...interface{}) error
 	}
+	listGetter interface {
+		getList(out *[]BlackDevice) error
+	}
 	multiinserter interface {
 		insert(records []Record) error
 	}
@@ -55,6 +58,11 @@ type dbDecorator struct {
 
 func (b *dbDecorator) find(out *[]Record, limit int, where ...interface{}) error {
 	db := b.Order("birth_date desc").Limit(limit).Find(out, where...)
+	return db.Error
+}
+
+func (b *dbDecorator) getList(out *[]BlackDevice) error {
+	db := b.Find(out)
 	return db.Error
 }
 

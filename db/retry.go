@@ -114,6 +114,46 @@ func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration
 	}
 }
 
+type ListGetter interface {
+	GetBlacklist() ([]BlackDevice, error)
+}
+
+type RetryListGService struct {
+	lg     ListGetter
+	config retryConfig
+}
+
+func (ltg RetryListGService) GetBlacklist() (blacklist []BlackDevice, err error) {
+	retries := ltg.config.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ltg.config.measures.SQLQueryRetryCount.With(typeLabel, listReadType).Add(1.0)
+			ltg.config.sleep(ltg.config.interval)
+		}
+		if blacklist, err = ltg.lg.GetBlacklist(); err == nil {
+			break
+		}
+	}
+
+	return blacklist, err
+}
+
+func CreateRetryListGService(listGetter ListGetter, retries int, interval time.Duration, provider provider.Provider) RetryListGService {
+	return RetryListGService{
+		lg: listGetter,
+		config: retryConfig{
+			retries:  retries,
+			interval: interval,
+			sleep:    time.Sleep,
+			measures: NewMeasures(provider),
+		},
+	}
+}
+
 type RecordGetter interface {
 	GetRecords(deviceID string, limit int) ([]Record, error)
 	GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error)

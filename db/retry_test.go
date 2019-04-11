@@ -220,6 +220,87 @@ func TestCreateRetryUpdateService(t *testing.T) {
 	assert.Equal(r.config.interval, newService.config.interval)
 }
 
+func TestRetryGetBlacklist(t *testing.T) {
+	initialErr := errors.New("test initial error")
+	failureErr := errors.New("test final error")
+	interval := 8 * time.Second
+	tests := []struct {
+		description         string
+		numCalls            int
+		retries             int
+		expectedRetryMetric float64
+		finalError          error
+		expectedErr         error
+	}{
+		{
+			description: "Initial Success",
+			numCalls:    1,
+			retries:     1,
+			finalError:  nil,
+			expectedErr: nil,
+		},
+		{
+			description:         "Eventual Success",
+			numCalls:            3,
+			retries:             5,
+			expectedRetryMetric: 2.0,
+			finalError:          nil,
+			expectedErr:         nil,
+		},
+		{
+			description: "Initial Failure",
+			numCalls:    1,
+			retries:     0,
+			finalError:  failureErr,
+			expectedErr: failureErr,
+		},
+		{
+			description:         "Eventual Failure",
+			numCalls:            4,
+			retries:             3,
+			expectedRetryMetric: 3.0,
+			finalError:          failureErr,
+			expectedErr:         failureErr,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
+			mockObj := new(mockLG)
+			if tc.numCalls > 1 {
+				mockObj.On("GetBlacklist").Return([]BlackDevice{}, initialErr).Times(tc.numCalls - 1)
+			}
+			if tc.numCalls > 0 {
+				mockObj.On("GetBlacklist").Return([]BlackDevice{}, tc.finalError).Once()
+			}
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
+
+			retryListGService := RetryListGService{
+				lg: mockObj,
+				config: retryConfig{
+					retries:  tc.retries,
+					interval: interval,
+					sleep: func(t time.Duration) {
+						assert.Equal(interval, t)
+					},
+					measures: m,
+				},
+			}
+			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
+			_, err := retryListGService.GetBlacklist()
+			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQueryRetryCounter, typeLabel, listReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			if tc.expectedErr == nil || err == nil {
+				assert.Equal(tc.expectedErr, err)
+			} else {
+				assert.Contains(err.Error(), tc.expectedErr.Error())
+			}
+		})
+	}
+
+}
+
 func TestRetryGetRecords(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
