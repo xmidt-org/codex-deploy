@@ -26,7 +26,6 @@ import (
 	"os"
 
 	crypto_rand "crypto/rand" // Custom so it's clear which rand we're using.
-
 )
 
 var (
