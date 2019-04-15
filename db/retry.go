@@ -18,8 +18,9 @@
 package db
 
 import (
-	"github.com/Comcast/codex/blacklist"
 	"time"
+
+	"github.com/Comcast/codex/blacklist"
 
 	"github.com/go-kit/kit/metrics/provider"
 )
@@ -153,7 +154,7 @@ func CreateRetryListGService(listGetter blacklist.Updater, retries int, interval
 
 type RecordGetter interface {
 	GetRecords(deviceID string, limit int) ([]Record, error)
-	GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error)
+	GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error)
 }
 
 type RetryRGService struct {
@@ -185,7 +186,7 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, erro
 	return record, err
 }
 
-func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
+func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
 	var (
 		err    error
 		record []Record

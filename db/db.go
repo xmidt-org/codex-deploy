@@ -230,7 +230,7 @@ func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 }
 
 // GetRecords returns a list of records for a given device
-func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
+func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
 	var (
 		deviceInfo []Record
 	)

@@ -108,7 +108,7 @@ func TestGetRecordsOfType(t *testing.T) {
 	tests := []struct {
 		description           string
 		deviceID              string
-		eventType             int
+		eventType             EventType
 		expectedRecords       []Record
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
