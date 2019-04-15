@@ -34,6 +34,8 @@ func NewEmptySyncList() SyncList {
 
 func (m *SyncList) InList(ID string) (string, bool) {
 	m.dataLock.RLock()
+	defer m.dataLock.RUnlock()
+
 	// fast return of raw string
 	if reason, ok := m.rules[ID]; ok {
 		return reason, true
@@ -46,7 +48,6 @@ func (m *SyncList) InList(ID string) (string, bool) {
 			}
 		}
 	}
-	m.dataLock.RUnlock()
 	return "", false
 }
 
