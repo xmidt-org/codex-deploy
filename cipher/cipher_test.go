@@ -19,7 +19,7 @@ package cipher
 
 import (
 	"crypto"
-	crypto_rand "crypto/rand" // Custom so it's clear which rand we're using.
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/nacl/box"
@@ -109,10 +109,10 @@ func testCryptoPair(t *testing.T, encrypter Encrypt, decrypter Decrypt, errOnLar
 func TestBoxCipher(t *testing.T) {
 	require := require.New(t)
 
-	senderPublicKey, senderPrivateKey, err := box.GenerateKey(crypto_rand.Reader)
+	senderPublicKey, senderPrivateKey, err := box.GenerateKey(rand.Reader)
 	require.NoError(err)
 
-	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(crypto_rand.Reader)
+	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(rand.Reader)
 	require.NoError(err)
 
 	encrypter := NewBoxEncrypter(*senderPrivateKey, *recipientPublicKey)

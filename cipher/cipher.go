@@ -20,7 +20,7 @@ package cipher
 
 import (
 	"crypto"
-	crypto_rand "crypto/rand" // Custom so it's clear which rand we're using.
+	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"github.com/goph/emperror"
@@ -68,7 +68,7 @@ func GeneratePrivateKey(size int) *rsa.PrivateKey {
 		size = 64
 	}
 
-	privateKey, _ := rsa.GenerateKey(crypto_rand.Reader, size)
+	privateKey, _ := rsa.GenerateKey(rand.Reader, size)
 	return privateKey
 }
 
@@ -126,7 +126,7 @@ func NewBasicDecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, se
 func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
-		crypto_rand.Reader,
+		rand.Reader,
 		c.recipientPublicKey,
 		message,
 		c.label,
@@ -142,7 +142,7 @@ func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) 
 	pssh.Write(message)
 	hashed := pssh.Sum(nil)
 
-	signature, err := rsa.SignPSS(crypto_rand.Reader, c.senderPrivateKey, c.hasher, hashed, &opts)
+	signature, err := rsa.SignPSS(rand.Reader, c.senderPrivateKey, c.hasher, hashed, &opts)
 	if err != nil {
 		return []byte(""), []byte{}, emperror.Wrap(err, "failed to sign message")
 	}
@@ -153,7 +153,7 @@ func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) 
 func (c *basicDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
-		crypto_rand.Reader,
+		rand.Reader,
 		c.recipientPrivateKey,
 		cipher,
 		c.label,
@@ -198,7 +198,7 @@ func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte) Enc
 
 func (enBox *encryptBox) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	var nonce [24]byte
-	if _, err := io.ReadFull(crypto_rand.Reader, nonce[:]); err != nil {
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
 		return []byte(""), []byte{}, emperror.Wrap(err, "failed to generate nonce")
 	}
 
