@@ -23,16 +23,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Comcast/webpa-common/wrp"
 	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var (
-	goodEvent = Event{
+	goodEvent = wrp.SimpleEvent{
+		Type:        wrp.SimpleEventMessageType,
 		Source:      "test source",
-		Destination: "test destination",
-		Details:     map[string]interface{}{"test key": "test value"},
+		Destination: "testdestination",
+		Metadata:    map[string]string{"test key": "test value"},
 	}
 )
 
@@ -83,7 +85,7 @@ func TestGetRecords(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("findRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
@@ -151,7 +153,7 @@ func TestGetRecordsOfType(t *testing.T) {
 			if tc.expectedCalls > 0 {
 				marshaledRecords, err := json.Marshal(tc.expectedRecords)
 				assert.Nil(err)
-				mockObj.On("find", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("findRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))

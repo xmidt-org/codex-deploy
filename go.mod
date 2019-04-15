@@ -3,7 +3,7 @@ module github.com/Comcast/codex
 go 1.12
 
 require (
-	github.com/Comcast/webpa-common v0.0.0-20190312224005-400bb4f8fc50
+	github.com/Comcast/webpa-common v0.9.0-alpha.0.20190402211944-723a128f40c7
 	github.com/DATA-DOG/godog v0.7.13
 	github.com/InVisionApp/go-health v2.1.0+incompatible
 	github.com/InVisionApp/go-logger v1.0.1
@@ -33,6 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.3.0
+	github.com/ugorji/go/codec v1.1.2-0.20181022190402-e5e69e061d4f // indirect
 	golang.org/x/crypto v0.0.0-20190320223903-b7391e95e576
 	golang.org/x/net v0.0.0-20190320064053-1272bf9dcd53 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect

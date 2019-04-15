@@ -24,11 +24,12 @@ import (
 )
 
 const (
-	typeLabel  = "type"
-	insertType = "insert"
-	deleteType = "delete"
-	readType   = "read"
-	pingType   = "ping"
+	typeLabel    = "type"
+	insertType   = "insert"
+	deleteType   = "delete"
+	readType     = "read"
+	pingType     = "ping"
+	listReadType = "listRead"
 )
 
 const (

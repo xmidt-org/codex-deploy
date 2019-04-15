@@ -22,9 +22,12 @@ authHeader: ["YXV0aEhlYWRlcjp0ZXN0"]
 health:
   port: ":7001"
   endpoint: "/health"
+
 getLimit: 2
 getRetries: 0
 retryInterval: 0s
+blacklistInterval: 1m
+
 db:
   server: "db:26257"
   username: "roachadmin"
