@@ -139,6 +139,7 @@ type Record struct {
 	BirthDate int64  `json:"birthdate"`
 	DeathDate int64  `json:"deathdate"`
 	Data      []byte `json:"data"`
+	Nonce     []byte `json:"nonce"`
 }
 
 // set Record's table name to be `events`

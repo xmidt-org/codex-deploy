@@ -8,8 +8,11 @@ require (
 	github.com/InVisionApp/go-health v2.1.0+incompatible
 	github.com/InVisionApp/go-logger v1.0.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
+	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
+	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/goph/emperror v0.16.0
 	github.com/gorilla/mux v1.7.0
@@ -22,9 +25,12 @@ require (
 	github.com/influxdata/platform v0.0.0-20190117200541-d500d3cf5589 // indirect
 	github.com/jinzhu/gorm v1.9.2
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/jinzhu/now v1.0.0 // indirect
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20190320223903-b7391e95e576

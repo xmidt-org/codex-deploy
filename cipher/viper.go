@@ -1,9 +1,7 @@
 package cipher
 
 import (
-	"errors"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 type LocalCerts struct {
@@ -11,60 +9,31 @@ type LocalCerts struct {
 	HashName string
 }
 
-func LoadPublic(v *viper.Viper) (PublicKeyCipher, error) {
+const (
+	// CipherKey is the Viper subkey under which logging should be stored.
+	// NewOptions *does not* assume this key.
+	CipherKey = "cipher"
+)
 
-	config := new(LocalCerts)
-	cipherViper := v.Sub("cipher")
-	if cipherViper == nil {
-		return nil, errors.New("no cipher to load")
-	}
-	err := cipherViper.Unmarshal(config)
-	if err != nil {
-		return nil, err
-	}
-
-	// check for noop
-	if strings.ToLower(config.HashName) == "noop" {
-		return new(NOOP), nil
+// Sub returns the standard child Viper, using CipherKey, for this package.
+// If passed nil, this function returns nil.
+func Sub(v *viper.Viper) *viper.Viper {
+	if v != nil {
+		return v.Sub(CipherKey)
 	}
 
-	loadConfg := LoadConfig{
-		&BasicHashLoader{
-			config.HashName,
-		},
-		&FileLoader{
-			Path: config.Path,
-		},
-	}
-	return LoadPublicKey(loadConfg)
-
+	return nil
 }
 
-func LoadPrivate(v *viper.Viper) (PrivateKeyCipher, error) {
-
-	config := new(LocalCerts)
-	cipherViper := v.Sub("cipher")
-	if cipherViper == nil {
-		return nil, errors.New("no cipher to load")
-	}
-	err := cipherViper.Unmarshal(config)
-	if err != nil {
-		return nil, err
+// FromViper produces an Options from a (possibly nil) Viper instance.
+// Callers should use FromViper(Sub(v)) if the standard subkey is desired.
+func FromViper(v *viper.Viper) (*Options, error) {
+	o := new(Options)
+	if v != nil {
+		if err := v.Unmarshal(o); err != nil {
+			return nil, err
+		}
 	}
 
-	// check for noop
-	if strings.ToLower(config.HashName) == "noop" {
-		return new(NOOP), nil
-	}
-
-	loadConfg := LoadConfig{
-		&BasicHashLoader{
-			config.HashName,
-		},
-		&FileLoader{
-			Path: config.Path,
-		},
-	}
-	return LoadPrivateKey(loadConfg)
-
+	return o, nil
 }

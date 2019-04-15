@@ -1,6 +1,8 @@
 {
-  "cipher": {
-    "hashName": "SHA1",
-    "path": "private.pem"
-  }
+  "algorithm": {
+    "type": "basic",
+    "hash": "SHA512"
+  },
+  "senderPrivateKey": "private.pem",
+  "recipientPublicKey": "public.pem"
 }
