@@ -39,7 +39,7 @@ func TestBasicCipherLoader(t *testing.T) {
 		PublicKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "public.pem",
 		},
-	}).LoadEncryt()
+	}).LoadEncrypt()
 	assert.NotEmpty(encrypter)
 	assert.NoError(err)
 
@@ -106,10 +106,10 @@ func TestLoadOptions(t *testing.T) {
 func testOptions(t *testing.T, o Options, errOnLarge bool) {
 	require := require.New(t)
 
-	encrypter, err := o.LoadEncryt()
+	encrypter, err := o.LoadEncrypt()
 	require.NoError(err)
 
-	decrypter, err := o.LoadDecryt()
+	decrypter, err := o.LoadDecrypt()
 	require.NoError(err)
 
 	testCryptoPair(t, encrypter, decrypter, errOnLarge)

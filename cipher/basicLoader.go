@@ -55,7 +55,7 @@ type BasicLoader struct {
 	PublicKey  KeyLoader
 }
 
-func (loader *BasicLoader) LoadEncryt() (Encrypt, error) {
+func (loader *BasicLoader) LoadEncrypt() (Encrypt, error) {
 	hashFunc, err := loader.Hash.GetHash()
 	if err != nil {
 		return nil, err

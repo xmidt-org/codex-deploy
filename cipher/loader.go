@@ -55,11 +55,11 @@ type Options struct {
 type KeyLoader interface {
 	GetBytes() ([]byte, error)
 }
-type EncrytLoader interface {
-	LoadEncryt() (Encrypt, error)
+type EncryptLoader interface {
+	LoadEncrypt() (Encrypt, error)
 }
-type DecrytLoader interface {
-	LoadDecryt() (Decrypt, error)
+type DecryptLoader interface {
+	LoadDecrypt() (Decrypt, error)
 }
 
 type FileLoader struct {
@@ -114,7 +114,7 @@ func GetPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	}
 }
 
-func (o *Options) LoadEncryt() (Encrypt, error) {
+func (o *Options) LoadEncrypt() (Encrypt, error) {
 	if o.Logger == nil {
 		o.Logger = logging.DefaultLogger()
 	}
@@ -133,7 +133,7 @@ func (o *Options) LoadEncryt() (Encrypt, error) {
 					Path: o.RecipientPublicKey,
 				},
 			}
-			return boxLoader.LoadEncryt()
+			return boxLoader.LoadEncrypt()
 		case "basic":
 			if hashName, ok := o.Algorithm["hash"].(string); ok {
 				basicLoader := BasicLoader{
@@ -145,7 +145,7 @@ func (o *Options) LoadEncryt() (Encrypt, error) {
 						Path: o.RecipientPublicKey,
 					},
 				}
-				return basicLoader.LoadEncryt()
+				return basicLoader.LoadEncrypt()
 			} else {
 				return nil, errors.New("failed to find hash name for basic algorithm cipher type")
 			}
@@ -155,7 +155,7 @@ func (o *Options) LoadEncryt() (Encrypt, error) {
 	return DefaultCipherEncrypter(), errors.New("failed to load custom algorithm")
 }
 
-func (o *Options) LoadDecryt() (Decrypt, error) {
+func (o *Options) LoadDecrypt() (Decrypt, error) {
 	if o.Logger == nil {
 		o.Logger = logging.DefaultLogger()
 	}

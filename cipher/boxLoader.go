@@ -55,7 +55,7 @@ func (boxLoader *BoxLoader) getBoxPublicKey() ([32]byte, error) {
 	return publicKey, nil
 }
 
-func (boxLoader *BoxLoader) LoadEncryt() (Encrypt, error) {
+func (boxLoader *BoxLoader) LoadEncrypt() (Encrypt, error) {
 	publicKey, err := boxLoader.getBoxPublicKey()
 	if err != nil {
 		return nil, err
