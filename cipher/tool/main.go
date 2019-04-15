@@ -18,14 +18,13 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/pem"
 	"fmt"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/crypto/nacl/box"
 	"io/ioutil"
 	"os"
-
-	crypto_rand "crypto/rand" // Custom so it's clear which rand we're using.
 )
 
 var (
@@ -41,7 +40,7 @@ func init() {
 func createBoxFiles(args []string) int {
 	flag.Parse()
 
-	publicKey, privateKey, err := box.GenerateKey(crypto_rand.Reader)
+	publicKey, privateKey, err := box.GenerateKey(rand.Reader)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to generate random key %s\n", err.Error())
 		return 1
@@ -61,12 +60,12 @@ func createBoxFiles(args []string) int {
 		},
 	)
 
-	err = ioutil.WriteFile(privatePath, privateData, 0644)
+	err = ioutil.WriteFile(privatePath, privateData, 0400)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write to file %s\n", err.Error())
 		return 1
 	}
-	err = ioutil.WriteFile(publicPath, publicData, 0644)
+	err = ioutil.WriteFile(publicPath, publicData, 0400)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write to file %s\n", err.Error())
 		return 1
