@@ -49,7 +49,7 @@ func (rg *mockRG) GetRecords(deviceID string, limit int) ([]Record, error) {
 	return args.Get(0).([]Record), args.Error(1)
 }
 
-func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType int) ([]Record, error) {
+func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
 	args := rg.Called(deviceID, limit, eventType)
 	return args.Get(0).([]Record), args.Error(1)
 }
