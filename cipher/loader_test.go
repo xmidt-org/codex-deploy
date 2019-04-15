@@ -31,7 +31,7 @@ func TestBasicCipherLoader(t *testing.T) {
 	dir, err := os.Getwd()
 	assert.NoError(err)
 
-	encrypter, err := LoadBasicEncrypter(BasicLoader{
+	encrypter, err := (&BasicLoader{
 		Hash: &BasicHashLoader{HashName: "SHA512"},
 		PrivateKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
@@ -39,11 +39,11 @@ func TestBasicCipherLoader(t *testing.T) {
 		PublicKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "public.pem",
 		},
-	})
+	}).LoadEncryt()
 	assert.NotEmpty(encrypter)
 	assert.NoError(err)
 
-	decrypter, err := LoadBasicDecrypter(BasicLoader{
+	decrypter, err := (&BasicLoader{
 		Hash: &BasicHashLoader{HashName: "SHA512"},
 		PrivateKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
@@ -51,7 +51,7 @@ func TestBasicCipherLoader(t *testing.T) {
 		PublicKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "public.pem",
 		},
-	})
+	}).LoadDecrypt()
 	assert.NotEmpty(decrypter)
 	assert.NoError(err)
 
@@ -106,10 +106,10 @@ func TestLoadOptions(t *testing.T) {
 func testOptions(t *testing.T, o Options, errOnLarge bool) {
 	require := require.New(t)
 
-	encrypter, err := NewEncrypter(o)
+	encrypter, err := o.LoadEncryt()
 	require.NoError(err)
 
-	decrypter, err := NewDecrypter(o)
+	decrypter, err := o.LoadDecryt()
 	require.NoError(err)
 
 	testCryptoPair(t, encrypter, decrypter, errOnLarge)

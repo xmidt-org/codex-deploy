@@ -23,7 +23,7 @@ func TestViper(t *testing.T) {
 	options, err := FromViper(v)
 	assert.NoError(err)
 
-	encrypter, err := NewEncrypter(*options)
+	encrypter, err := options.LoadEncryt()
 	assert.NoError(err)
 	assert.NotEmpty(options)
 
@@ -49,7 +49,7 @@ func TestNOOPViper(t *testing.T) {
 	options, err := FromViper(v)
 	assert.NoError(err)
 
-	encrypter, err := NewEncrypter(*options)
+	encrypter, err := options.LoadEncryt()
 
 	msg := "hello"
 	data, _, err := encrypter.EncryptMessage([]byte(msg))

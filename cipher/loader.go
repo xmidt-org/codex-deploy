@@ -39,35 +39,27 @@ var (
 	}
 )
 
-func GetHash(hashType string) crypto.Hash {
-	if elem, ok := hashFunctions[strings.ToUpper(hashType)]; ok {
-		return elem
-	}
-	return crypto.BLAKE2b_512
-}
+type Options struct {
+	// Logger is the go-kit Logger to use for server startup and error logging.  If not
+	// supplied, logging.DefaultLogger() is used instead.
+	Logger log.Logger `json:"-"`
 
-type HashLoader interface {
-	GetHash() (crypto.Hash, error)
-}
+	Algorithm map[string]interface{} `json:"algorithm,omitempty"`
 
-type BasicHashLoader struct {
-	HashName string `mapstructure:"hash"`
-}
-
-// GetHash return the given hash from hashFunctions if not found it will return an error.
-//   0 is an invalid hash
-func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
-	if elem, ok := hashFunctions[strings.ToUpper(b.HashName)]; ok {
-		if elem.Available() {
-			return elem, nil
-		}
-		return 0, errors.New("hash " + b.HashName + " is not linked in binary")
-	}
-	return 0, errors.New("hashname " + b.HashName + " not found")
+	SenderPrivateKey    string `json:"senderPrivateKey,omitempty"`
+	SenderPublicKey     string `json:"senderPublicKey,omitempty"`
+	RecipientPrivateKey string `json:"recipientPrivateKey,omitempty"`
+	RecipientPublicKey  string `json:"recipientPublicKey,omitempty"`
 }
 
 type KeyLoader interface {
 	GetBytes() ([]byte, error)
+}
+type EncrytLoader interface {
+	LoadEncryt() (Encrypt, error)
+}
+type DecrytLoader interface {
+	LoadDecryt() (Decrypt, error)
 }
 
 type FileLoader struct {
@@ -78,18 +70,7 @@ func (f *FileLoader) GetBytes() ([]byte, error) {
 	return ioutil.ReadFile(f.Path)
 }
 
-type BasicLoader struct {
-	Hash       HashLoader
-	PrivateKey KeyLoader
-	PublicKey  KeyLoader
-}
-
-type BoxLoader struct {
-	PrivateKey KeyLoader
-	PublicKey  KeyLoader
-}
-
-func getPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
+func GetPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
 	data, err := loader.GetBytes()
 	if err != nil {
 		return nil, err
@@ -111,21 +92,7 @@ func getPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
 	}
 }
 
-func getBoxPrivateKey(loader KeyLoader) ([32]byte, error) {
-	var privateKey [32]byte
-	data, err := loader.GetBytes()
-	if err != nil {
-		return privateKey, nil
-	}
-	privatePem, _ := pem.Decode(data)
-	if privatePem.Type != "BOX PRIVATE KEY" {
-		return privateKey, errors.New("incorrect pem type: " + privatePem.Type)
-	}
-	copy(privateKey[0:24], privatePem.Bytes[:])
-	return privateKey, nil
-}
-
-func getPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
+func GetPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	data, err := loader.GetBytes()
 	if err != nil {
 		return nil, err
@@ -147,117 +114,29 @@ func getPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	}
 }
 
-func getBoxPublicKey(loader KeyLoader) ([32]byte, error) {
-	var publicKey [32]byte
-	data, err := loader.GetBytes()
-	if err != nil {
-		return publicKey, nil
-	}
-	publicPem, _ := pem.Decode(data)
-	if publicPem.Type != "BOX PUBLIC KEY" {
-		return publicKey, errors.New("incorrect pem type: " + publicPem.Type)
-	}
-	copy(publicKey[0:24], publicPem.Bytes[:])
-	return publicKey, nil
-}
-
-func LoadBasicEncrypter(loader BasicLoader) (Encrypt, error) {
-	hashFunc, err := loader.Hash.GetHash()
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := getPublicKey(loader.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKey, err := getPrivateKey(loader.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return NewBasicEncrypter(hashFunc, privateKey, publicKey), nil
-}
-
-func LoadBoxEncrypter(loader BoxLoader) (Encrypt, error) {
-	publicKey, err := getBoxPublicKey(loader.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKey, err := getBoxPrivateKey(loader.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return NewBoxEncrypter(privateKey, publicKey), nil
-}
-
-func LoadBasicDecrypter(loader BasicLoader) (Decrypt, error) {
-	hashFunc, err := loader.Hash.GetHash()
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := getPublicKey(loader.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKey, err := getPrivateKey(loader.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return NewBasicDecrypter(hashFunc, privateKey, publicKey), nil
-}
-
-func LoadBoxDecrypter(loader BoxLoader) (Decrypt, error) {
-	publicKey, err := getBoxPublicKey(loader.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKey, err := getBoxPrivateKey(loader.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return NewBoxDecrypter(privateKey, publicKey), nil
-}
-
-type Options struct {
-	// Logger is the go-kit Logger to use for server startup and error logging.  If not
-	// supplied, logging.DefaultLogger() is used instead.
-	Logger log.Logger `json:"-"`
-
-	Algorithm map[string]interface{} `json:"algorithm,omitempty"`
-
-	SenderPrivateKey    string `json:"senderPrivateKey,omitempty"`
-	SenderPublicKey     string `json:"senderPublicKey,omitempty"`
-	RecipientPrivateKey string `json:"recipientPrivateKey,omitempty"`
-	RecipientPublicKey  string `json:"recipientPublicKey,omitempty"`
-}
-
-func NewEncrypter(o Options) (Encrypt, error) {
+func (o *Options) LoadEncryt() (Encrypt, error) {
 	if o.Logger == nil {
 		o.Logger = logging.DefaultLogger()
 	}
-
 	logging.Info(o.Logger).Log(logging.MessageKey(), "new encrypter", "options", o)
+
 	if algorithm, ok := o.Algorithm["type"].(string); ok {
 		switch strings.ToLower(algorithm) {
 		case "noop":
 			return DefaultCipherEncrypter(), nil
 		case "box":
-			return LoadBoxEncrypter(BoxLoader{
+			boxLoader := BoxLoader{
 				PrivateKey: &FileLoader{
 					Path: o.SenderPrivateKey,
 				},
 				PublicKey: &FileLoader{
 					Path: o.RecipientPublicKey,
 				},
-			})
+			}
+			return boxLoader.LoadEncryt()
 		case "basic":
 			if hashName, ok := o.Algorithm["hash"].(string); ok {
-				return LoadBasicEncrypter(BasicLoader{
+				basicLoader := BasicLoader{
 					Hash: &BasicHashLoader{hashName},
 					PrivateKey: &FileLoader{
 						Path: o.SenderPrivateKey,
@@ -265,7 +144,8 @@ func NewEncrypter(o Options) (Encrypt, error) {
 					PublicKey: &FileLoader{
 						Path: o.RecipientPublicKey,
 					},
-				})
+				}
+				return basicLoader.LoadEncryt()
 			} else {
 				return nil, errors.New("failed to find hash name for basic algorithm cipher type")
 			}
@@ -275,7 +155,7 @@ func NewEncrypter(o Options) (Encrypt, error) {
 	return DefaultCipherEncrypter(), errors.New("failed to load custom algorithm")
 }
 
-func NewDecrypter(o Options) (Decrypt, error) {
+func (o *Options) LoadDecryt() (Decrypt, error) {
 	if o.Logger == nil {
 		o.Logger = logging.DefaultLogger()
 	}
@@ -286,17 +166,18 @@ func NewDecrypter(o Options) (Decrypt, error) {
 		case "noop":
 			return DefaultCipherDecrypter(), nil
 		case "box":
-			return LoadBoxDecrypter(BoxLoader{
+			boxLoader := BoxLoader{
 				PrivateKey: &FileLoader{
 					Path: o.RecipientPrivateKey,
 				},
 				PublicKey: &FileLoader{
 					Path: o.SenderPublicKey,
 				},
-			})
+			}
+			return boxLoader.LoadDecrypt()
 		case "basic":
 			if hashName, ok := o.Algorithm["hash"].(string); ok {
-				return LoadBasicDecrypter(BasicLoader{
+				basicLoader := BasicLoader{
 					Hash: &BasicHashLoader{hashName},
 					PrivateKey: &FileLoader{
 						Path: o.RecipientPrivateKey,
@@ -304,7 +185,8 @@ func NewDecrypter(o Options) (Decrypt, error) {
 					PublicKey: &FileLoader{
 						Path: o.SenderPublicKey,
 					},
-				})
+				}
+				return basicLoader.LoadDecrypt()
 			} else {
 				return nil, errors.New("failed to find hash name for basic algorithm cipher type")
 			}
