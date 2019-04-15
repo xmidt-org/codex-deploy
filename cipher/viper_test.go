@@ -20,9 +20,17 @@ func TestViper(t *testing.T) {
 		t.Fatalf("%s\n", err)
 	}
 
-	decrypt, err := LoadPrivate(v)
+	options, err := FromViper(v)
 	assert.NoError(err)
-	assert.NotEmpty(decrypt)
+
+	encrypter, err := options.LoadEncrypt()
+	assert.NoError(err)
+	assert.NotEmpty(options)
+
+	msg := "hello"
+	data, _, err := encrypter.EncryptMessage([]byte(msg))
+	assert.NoError(err)
+	assert.NotEqual([]byte(msg), data)
 }
 
 func TestNOOPViper(t *testing.T) {
@@ -38,11 +46,13 @@ func TestNOOPViper(t *testing.T) {
 		t.Fatalf("%s\n", err)
 	}
 
-	encrypt, err := LoadPublic(v)
+	options, err := FromViper(v)
 	assert.NoError(err)
 
+	encrypter, err := options.LoadEncrypt()
+
 	msg := "hello"
-	data, err := encrypt.EncryptMessage([]byte(msg))
+	data, _, err := encrypter.EncryptMessage([]byte(msg))
 	assert.NoError(err)
 	assert.Equal([]byte(msg), data)
 }

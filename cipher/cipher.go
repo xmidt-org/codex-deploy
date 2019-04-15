@@ -24,8 +24,11 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"github.com/goph/emperror"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/nacl/box"
 	"hash"
+	"io"
 	"os"
 )
 
@@ -41,43 +44,18 @@ func init() {
 	})
 }
 
-// PrivateKeyCipher handles functionality provided with a publicKey
-type PublicKeyCipher interface {
-	Enrypt
-	Verify
-}
-
-// PrivateKeyCipher handles functionality provided with a privateKey
-type PrivateKeyCipher interface {
-	Decrypt
-	Sign
-}
-
-// Enrypt represents the ability to encrypt messages
-type Enrypt interface {
+// Encrypt represents the ability to encrypt messages
+type Encrypt interface {
 	// EncryptMessage attempts to encode the message into an array of bytes.
 	// and error will be returned if failed to encode the message.
-	EncryptMessage(message []byte) ([]byte, error)
+	EncryptMessage(message []byte) (crypt []byte, nonce []byte, err error)
 }
 
 // Decrypt represents the ability to decrypt messages
 type Decrypt interface {
 	// DecryptMessage attempts to decode the message into a string.
 	// and error will be returned if failed to decode the message.
-	DecryptMessage(cipher []byte) ([]byte, error)
-}
-
-// Sign is used to sign the signature of a message
-type Sign interface {
-	// Sign attempts to sign the message into an array of bytes
-	// and an error will be returned if a failure is encountered while signing the message.
-	Sign(message []byte) ([]byte, error)
-}
-
-// Verify is used to sign and verify the signature of a message
-type Verify interface {
-	// VerifyMessage will return true if the message was successfully verified
-	VerifyMessage(message []byte, signature []byte) bool
+	DecryptMessage(cipher []byte, nonce []byte) (message []byte, err error)
 }
 
 // GeneratePrivateKey will create a private key with the size given
@@ -94,118 +72,168 @@ func GeneratePrivateKey(size int) *rsa.PrivateKey {
 	return privateKey
 }
 
+func DefaultCipherEncrypter() Encrypt {
+	return &NOOP{}
+}
+
+func DefaultCipherDecrypter() Decrypt {
+	return &NOOP{}
+}
+
 // NOOP will just return the message
 type NOOP struct{}
 
-func (noop *NOOP) EncryptMessage(message []byte) ([]byte, error) {
-	return message, nil
+func (*NOOP) EncryptMessage(message []byte) (crypt []byte, nonce []byte, err error) {
+	return message, []byte{}, nil
 }
 
-func (noop *NOOP) DecryptMessage(cipher []byte) ([]byte, error) {
+func (*NOOP) DecryptMessage(cipher []byte, nonce []byte) (message []byte, err error) {
 	return cipher, nil
 }
 
-func (noop *NOOP) Sign(message []byte) ([]byte, error) {
-	return message, nil
+type basicEncrypter struct {
+	hasher             crypto.Hash
+	senderPrivateKey   *rsa.PrivateKey
+	recipientPublicKey *rsa.PublicKey
+	label              []byte
 }
 
-func (noop *NOOP) VerifyMessage(message []byte, signature []byte) bool {
-	if (message == nil) != (signature == nil) {
-		return false
-	}
-
-	if len(message) != len(signature) {
-		return false
-	}
-
-	for i := range message {
-		if message[i] != signature[i] {
-			return false
-		}
-	}
-
-	return true
+type basicDecrypter struct {
+	hasher              crypto.Hash
+	recipientPrivateKey *rsa.PrivateKey
+	senderPublicKey     *rsa.PublicKey
+	label               []byte
 }
 
-type crypter struct {
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
-	hasher     crypto.Hash
-	label      []byte
-}
-
-func NewPrivateCrypter(hash crypto.Hash, key *rsa.PrivateKey) PrivateKeyCipher {
-	return &crypter{
-		privateKey: key,
-		hasher:     hash,
+func NewBasicEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipientPublicKey *rsa.PublicKey) Encrypt {
+	return &basicEncrypter{
+		hasher:             hash,
+		senderPrivateKey:   senderPrivateKey,
+		recipientPublicKey: recipientPublicKey,
+		label:              []byte("codex-basic-encrypter"),
 	}
 }
 
-func NewPublicCrypter(hash crypto.Hash, key *rsa.PublicKey) PublicKeyCipher {
-	return &crypter{
-		publicKey: key,
-		hasher:    hash,
+func NewBasicDecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, senderPublicKey *rsa.PublicKey) Decrypt {
+	return &basicDecrypter{
+		hasher:              hash,
+		recipientPrivateKey: recipientPrivateKey,
+		senderPublicKey:     senderPublicKey,
+		label:               []byte("codex-basic-encrypter"),
 	}
 }
 
-func (c *crypter) EncryptMessage(message []byte) ([]byte, error) {
+func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
-		c.publicKey,
+		c.recipientPublicKey,
 		message,
 		c.label,
 	)
 	if err != nil {
-		return []byte(""), emperror.Wrap(err, "failed to encrypt message")
+		return []byte(""), []byte{}, emperror.Wrap(err, "failed to encrypt message")
 	}
 
-	return cipherdata, nil
+	var opts rsa.PSSOptions
+	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
+
+	pssh := c.hasher.New()
+	pssh.Write(message)
+	hashed := pssh.Sum(nil)
+
+	signature, err := rsa.SignPSS(rand.Reader, c.senderPrivateKey, c.hasher, hashed, &opts)
+	if err != nil {
+		return []byte(""), []byte{}, emperror.Wrap(err, "failed to sign message")
+	}
+
+	return cipherdata, signature, nil
 }
 
-func (c *crypter) DecryptMessage(cipher []byte) ([]byte, error) {
+func (c *basicDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
-		c.privateKey,
+		c.recipientPrivateKey,
 		cipher,
 		c.label,
 	)
 	if err != nil {
 		return []byte{}, emperror.Wrap(err, "failed to decrypt message")
 	}
+
+	var opts rsa.PSSOptions
+	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
+
+	pssh := c.hasher.New()
+	pssh.Write(decrypted)
+	hashed := pssh.Sum(nil)
+
+	err = rsa.VerifyPSS(c.senderPublicKey, c.hasher, hashed, nonce, &opts)
+	if err != nil {
+		return []byte{}, emperror.Wrap(err, "failed to validate signature")
+	}
+
 	return decrypted, nil
 }
 
-func (c *crypter) Sign(message []byte) ([]byte, error) {
-	var opts rsa.PSSOptions
-	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
-
-	pssh := c.hasher.New()
-	pssh.Write(message)
-	hashed := pssh.Sum(nil)
-
-	signature, err := rsa.SignPSS(rand.Reader, c.privateKey, c.hasher, hashed, &opts)
-	if err != nil {
-		return []byte{}, emperror.Wrap(err, "failed to sign message")
-	}
-
-	return signature, nil
+type encryptBox struct {
+	senderPrivateKey   [32]byte
+	recipientPublicKey [32]byte
+	sharedEncryptKey   *[32]byte
 }
-func (c *crypter) VerifyMessage(message []byte, signature []byte) bool {
-	var opts rsa.PSSOptions
-	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
 
-	pssh := c.hasher.New()
-	pssh.Write(message)
-	hashed := pssh.Sum(nil)
+func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte) Encrypt {
 
-	err := rsa.VerifyPSS(c.publicKey, c.hasher, hashed, signature, &opts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error from rsa.VerifyPSS: %s\n", err)
-
-		return false
+	encrypter := encryptBox{
+		senderPrivateKey:   senderPrivateKey,
+		recipientPublicKey: recipientPublicKey,
+		sharedEncryptKey:   new([32]byte),
 	}
 
-	return true
+	box.Precompute(encrypter.sharedEncryptKey, &encrypter.recipientPublicKey, &encrypter.senderPrivateKey)
+
+	return &encrypter
+}
+
+func (enBox *encryptBox) EncryptMessage(message []byte) ([]byte, []byte, error) {
+	var nonce [24]byte
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return []byte(""), []byte{}, emperror.Wrap(err, "failed to generate nonce")
+	}
+
+	encrypted := box.SealAfterPrecomputation(nil, message, &nonce, enBox.sharedEncryptKey)
+
+	return encrypted, nonce[:], nil
+}
+
+type decryptBox struct {
+	recipientPrivateKey [32]byte
+	senderPublicKey     [32]byte
+	sharedDecryptKey    *[32]byte
+}
+
+func NewBoxDecrypter(recipientPrivateKey [32]byte, senderPublicKey [32]byte) Decrypt {
+
+	decrypter := decryptBox{
+		recipientPrivateKey: recipientPrivateKey,
+		senderPublicKey:     senderPublicKey,
+		sharedDecryptKey:    new([32]byte),
+	}
+
+	box.Precompute(decrypter.sharedDecryptKey, &decrypter.senderPublicKey, &decrypter.recipientPrivateKey)
+
+	return &decrypter
+}
+
+func (deBox *decryptBox) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], nonce[:24])
+
+	decrypted, ok := box.OpenAfterPrecomputation(nil, cipher, &decryptNonce, deBox.sharedDecryptKey)
+	if !ok {
+		return []byte(""), errors.New("failed to decrypt message")
+	}
+
+	return decrypted, nil
 }

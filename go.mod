@@ -30,9 +30,9 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.3.0
-	github.com/ugorji/go v1.1.2-0.20181022190402-e5e69e061d4f // indirect
 	github.com/ugorji/go/codec v1.1.2-0.20181022190402-e5e69e061d4f // indirect
 	golang.org/x/crypto v0.0.0-20190320223903-b7391e95e576
 	golang.org/x/net v0.0.0-20190320064053-1272bf9dcd53 // indirect

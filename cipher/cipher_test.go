@@ -19,141 +19,106 @@ package cipher
 
 import (
 	"crypto"
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/nacl/box"
 	"testing"
 )
 
-func TestBasicEncrypt(t *testing.T) {
-	assert := assert.New(t)
+func TestBasicCrypt(t *testing.T) {
 
-	key := GeneratePrivateKey(2048)
-	assert.NotNil(key)
-
-	publicCrypter := NewPublicCrypter(crypto.BLAKE2b_512, &key.PublicKey)
-	assert.NotEmpty(publicCrypter)
-	privateCrypter := NewPrivateCrypter(crypto.BLAKE2b_512, key)
-	assert.NotEmpty(privateCrypter)
-
-	message := []byte("Hello World")
-
-	encodedMSG, err := publicCrypter.EncryptMessage(message)
-	assert.NoError(err)
-	assert.NotEmpty(encodedMSG)
-
-	msg, err := privateCrypter.DecryptMessage(encodedMSG)
-	assert.NoError(err)
-	assert.Equal(message, msg)
-}
-
-func TestLargeKey(t *testing.T) {
-	assert := assert.New(t)
-
-	key := GeneratePrivateKey(^int(0))
-	assert.NotNil(key)
-
-	publicCrypter := NewPublicCrypter(crypto.SHA1, &key.PublicKey)
-	assert.NotEmpty(publicCrypter)
-
-	message := []byte("Hello World")
-
-	_, err := publicCrypter.EncryptMessage(message)
-	assert.Error(err)
-}
-
-func TestSmallKey(t *testing.T) {
-	assert := assert.New(t)
-
-	key := GeneratePrivateKey(64)
-	assert.NotNil(key)
-
-	publicCrypter := NewPublicCrypter(crypto.SHA512, &key.PublicKey)
-	assert.NotEmpty(publicCrypter)
-
-	message := []byte("Hello World")
-
-	_, err := publicCrypter.EncryptMessage(message)
-	assert.Error(err)
-}
-
-type testData struct {
-	message     string
-	expectedErr bool
-}
-
-func TestCrypters(t *testing.T) {
-	keyA := GeneratePrivateKey(2048)
-	sha512 := NewPublicCrypter(crypto.SHA512, &keyA.PublicKey)
-	sha512Private := NewPrivateCrypter(crypto.SHA512, keyA)
-
-	keyB := GeneratePrivateKey(2048)
-	blake512 := NewPublicCrypter(crypto.BLAKE2b_512, &keyB.PublicKey)
-	blake512Private := NewPrivateCrypter(crypto.BLAKE2b_512, keyB)
-
-	keyC := GeneratePrivateKey(4096)
-	largeMD5 := NewPublicCrypter(crypto.BLAKE2b_512, &keyC.PublicKey)
-	largeMD5Private := NewPrivateCrypter(crypto.BLAKE2b_512, keyC)
-
-	crpyters := []struct {
-		publicCrypter  PublicKeyCipher
-		privateCrypter PrivateKeyCipher
-		name           string
+	tests := []struct {
+		size        int
+		description string
+		hashAlgo    crypto.Hash
+		errOnLarge  bool
 	}{
-		{new(NOOP), new(NOOP), "noop"},
-		{sha512, sha512Private, "sha512"},
-		{blake512, blake512Private, "blake512"},
-		{largeMD5, largeMD5Private, "largeMD5"},
+		{2048, "basic key", crypto.SHA256, true},
+		{4096, "large key", crypto.BLAKE2b_512, true},
+		{2048, "basic key with SHA512", crypto.SHA512, true},
+		{1024, "basic key with MD5", crypto.MD5, true},
 	}
 
-	testData := []testData{
-		{"Hello World", false},
-		{"Hello, 世界", false},
-		{"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", true},
-	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Log(tc.size)
+			require := require.New(t)
 
-	for _, c := range crpyters {
-		t.Run(c.name, func(t *testing.T) {
-			testCrypterOrder(t, c.publicCrypter, c.privateCrypter, testData)
+			senderPrivateKey := GeneratePrivateKey(tc.size)
+			require.NotNil(senderPrivateKey)
+
+			recipientPrivateKey := GeneratePrivateKey(tc.size)
+			require.NotNil(recipientPrivateKey)
+
+			encrypter := NewBasicEncrypter(tc.hashAlgo, senderPrivateKey, &recipientPrivateKey.PublicKey)
+			require.NotEmpty(encrypter)
+			decrypter := NewBasicDecrypter(tc.hashAlgo, recipientPrivateKey, &senderPrivateKey.PublicKey)
+			require.NotEmpty(decrypter)
+
+			testCryptoPair(t, encrypter, decrypter, tc.errOnLarge)
 		})
 	}
 }
 
-func testCrypterOrder(t *testing.T, publicCipher PublicKeyCipher, privateCipher PrivateKeyCipher, data []testData) {
-	assert := assert.New(t)
+func testCryptoPair(t *testing.T, encrypter Encrypt, decrypter Decrypt, errOnLarge bool) {
 
-	encodedMSGS := make([][]byte, len(data))
-	signatures := make([][]byte, len(data))
-
-	for index, item := range data {
-		// Encode Message
-		encodedMSG, err := publicCipher.EncryptMessage([]byte(item.message))
-		if err != nil && item.expectedErr {
-			assert.Empty(encodedMSG)
-			assert.Contains(err.Error(), "too long for RSA public key size")
-			continue
-		}
-		assert.NoError(err)
-		assert.NotEmpty(encodedMSG)
-		encodedMSGS[index] = encodedMSG
-
-		// Sign Message
-		signature, err := privateCipher.Sign([]byte(item.message))
-		assert.NoError(err)
-		assert.NotEmpty(signature)
-		signatures[index] = signature
-
+	tests := []struct {
+		str         string
+		description string
+	}{
+		{"Hello World", "basic"},
+		{"Hello, 世界", "complex characters"},
+		{"Half-giant jinxes peg-leg gillywater broken glasses large black dog Great Hall. Nearly-Headless Nick now" +
+			" string them together, and answer me this, which creature would you be unwilling to kiss? Poltergeist sticking" +
+			" charm, troll umbrella stand flying cars golden locket Lily Potter. Pumpkin juice Trevor wave your wand out" +
+			" glass orbs, a Grim knitted hats. Stan Shunpike doe patronus, suck his soul Muggle-Born large order of drills" +
+			" the trace. Bred in captivity fell through the veil, quaffle blue flame ickle diddykins Aragog. Yer a wizard," +
+			" Harry Doxycide the woes of Mrs. Weasley Goblet of Fire." +
+			"refect’s bathroom Trelawney veela squashy armchairs, SPEW: Gamp’s Elemental Law of Transfiguration. Magic" +
+			" Nagini bezoar, Hippogriffs Headless Hunt giant squid petrified. Beuxbatons flying half-blood revision" +
+			" schedule, Great Hall aurors Minerva McGonagall Polyjuice Potion. Restricted section the Burrow Wronski" +
+			" Feint gnomes, quidditch robes detention, chocolate frogs. Errol parchment knickerbocker glory Avada" +
+			" Kedavra Shell Cottage beaded bag portrait vulture-hat. Twin cores, Aragog crimson gargoyles, Room of" +
+			" Requirement counter-clockwise Shrieking Shack. Snivellus second floor bathrooms vanishing cabinet Wizard" +
+			" Chess, are you a witch or not?", "large string"},
 	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
 
-	for index, encodedMSG := range encodedMSGS {
-		if len(encodedMSG) == 0 {
-			continue
-		}
-		// Decode Message
-		msg, err := privateCipher.DecryptMessage(encodedMSG)
-		assert.NoError(err)
-		assert.Equal([]byte(data[index].message), msg)
+			message := []byte(tc.str)
+			encodedMSG, nonce, err := encrypter.EncryptMessage(message)
+			if !errOnLarge {
+				require.NoError(err)
+			} else if err != nil {
+				return
+			}
+			assert.NoError(err)
+			assert.NotEmpty(encodedMSG)
 
-		// Verify Message
-		verified := publicCipher.VerifyMessage(msg, signatures[index])
-		assert.True(verified)
+			msg, err := decrypter.DecryptMessage(encodedMSG, nonce)
+
+			assert.NoError(err)
+			assert.Equal(message, msg)
+		})
 	}
+}
+
+func TestBoxCipher(t *testing.T) {
+	require := require.New(t)
+
+	senderPublicKey, senderPrivateKey, err := box.GenerateKey(rand.Reader)
+	require.NoError(err)
+
+	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(rand.Reader)
+	require.NoError(err)
+
+	encrypter := NewBoxEncrypter(*senderPrivateKey, *recipientPublicKey)
+	require.NotEmpty(encrypter)
+	decrypter := NewBoxDecrypter(*recipientPrivateKey, *senderPublicKey)
+	require.NotEmpty(decrypter)
+
+	testCryptoPair(t, encrypter, decrypter, false)
 }

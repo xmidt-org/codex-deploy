@@ -18,42 +18,99 @@
 package cipher
 
 import (
+	"github.com/Comcast/webpa-common/logging"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 )
 
-func TestCipherLoader(t *testing.T) {
+func TestBasicCipherLoader(t *testing.T) {
 	assert := assert.New(t)
 
 	dir, err := os.Getwd()
 	assert.NoError(err)
 
-	privateCrypter, err := LoadPrivateKey(LoadConfig{
+	encrypter, err := (&BasicLoader{
 		Hash: &BasicHashLoader{HashName: "SHA512"},
-		Key: &FileLoader{
+		PrivateKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
 		},
-	})
-	assert.NotEmpty(privateCrypter)
-	assert.NoError(err)
-
-	publicCrypter, err := LoadPublicKey(LoadConfig{
-		Hash: &BasicHashLoader{HashName: "SHA512"},
-		Key: &FileLoader{
+		PublicKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "public.pem",
 		},
-	})
-	assert.NotEmpty(publicCrypter)
+	}).LoadEncrypt()
+	assert.NotEmpty(encrypter)
+	assert.NoError(err)
+
+	decrypter, err := (&BasicLoader{
+		Hash: &BasicHashLoader{HashName: "SHA512"},
+		PrivateKey: &FileLoader{
+			Path: dir + string(os.PathSeparator) + "private.pem",
+		},
+		PublicKey: &FileLoader{
+			Path: dir + string(os.PathSeparator) + "public.pem",
+		},
+	}).LoadDecrypt()
+	assert.NotEmpty(decrypter)
 	assert.NoError(err)
 
 	message := []byte("Hello World")
 
-	encodedMSG, err := publicCrypter.EncryptMessage(message)
+	encodedMSG, nonce, err := encrypter.EncryptMessage(message)
 	assert.NoError(err)
 	assert.NotEmpty(encodedMSG)
 
-	msg, err := privateCrypter.DecryptMessage(encodedMSG)
+	msg, err := decrypter.DecryptMessage(encodedMSG, nonce)
 	assert.NoError(err)
 	assert.Equal(message, msg)
+}
+
+func TestLoadOptions(t *testing.T) {
+	require := require.New(t)
+
+	dir, err := os.Getwd()
+	require.NoError(err)
+
+	testData := []struct {
+		description string
+		option      Options
+		errOnLarge  bool
+	}{
+		{"noop", Options{Algorithm: map[string]interface{}{"type": "noop"}}, false},
+		{"basic", Options{
+			Logger:              logging.NewTestLogger(nil, t),
+			Algorithm:           map[string]interface{}{"type": "basic", "hash": "SHA512"},
+			SenderPublicKey:     dir + string(os.PathSeparator) + "public.pem",
+			SenderPrivateKey:    dir + string(os.PathSeparator) + "private.pem",
+			RecipientPrivateKey: dir + string(os.PathSeparator) + "private.pem",
+			RecipientPublicKey:  dir + string(os.PathSeparator) + "public.pem",
+		}, true},
+		{"box", Options{
+			Logger:              logging.NewTestLogger(nil, t),
+			Algorithm:           map[string]interface{}{"type": "box"},
+			SenderPublicKey:     dir + string(os.PathSeparator) + "boxPublic.pem",
+			SenderPrivateKey:    dir + string(os.PathSeparator) + "boxPrivate.pem",
+			RecipientPrivateKey: dir + string(os.PathSeparator) + "boxPrivate.pem",
+			RecipientPublicKey:  dir + string(os.PathSeparator) + "boxPublic.pem",
+		}, true},
+	}
+
+	for _, tc := range testData {
+		t.Run(tc.description, func(t *testing.T) {
+			testOptions(t, tc.option, tc.errOnLarge)
+		})
+	}
+}
+
+func testOptions(t *testing.T, o Options, errOnLarge bool) {
+	require := require.New(t)
+
+	encrypter, err := o.LoadEncrypt()
+	require.NoError(err)
+
+	decrypter, err := o.LoadDecrypt()
+	require.NoError(err)
+
+	testCryptoPair(t, encrypter, decrypter, errOnLarge)
 }
