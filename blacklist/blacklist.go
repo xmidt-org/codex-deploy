@@ -3,6 +3,7 @@ package blacklist
 import (
 	"github.com/Comcast/webpa-common/logging"
 	"github.com/go-kit/kit/log"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -21,21 +22,33 @@ type List interface {
 }
 
 type SyncList struct {
-	data     map[string]string
+	rules    map[string]string
 	dataLock sync.RWMutex
 }
 
 func NewEmptySyncList() SyncList {
 	return SyncList{
-		data: make(map[string]string),
+		rules: make(map[string]string),
 	}
 }
 
-func (m *SyncList) InList(ID string) (reason string, ok bool) {
+func (m *SyncList) InList(ID string) (string, bool) {
 	m.dataLock.RLock()
-	reason, ok = m.data[ID]
-	m.dataLock.RUnlock()
-	return
+	defer m.dataLock.RUnlock()
+
+	// fast return of raw string
+	if reason, ok := m.rules[ID]; ok {
+		return reason, true
+	}
+	// for regex
+	for pattern, reason := range m.rules {
+		if matched, err := regexp.MatchString(pattern, ID); err == nil {
+			if matched {
+				return reason, true
+			}
+		}
+	}
+	return "", false
 }
 
 func (m *SyncList) UpdateList(data []BlackListedItem) {
@@ -46,7 +59,7 @@ func (m *SyncList) UpdateList(data []BlackListedItem) {
 	}
 
 	m.dataLock.Lock()
-	m.data = newData
+	m.rules = newData
 	m.dataLock.Unlock()
 }
 

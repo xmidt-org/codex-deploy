@@ -17,35 +17,28 @@
 
 package db
 
+//go:generate stringer -type=EventType
+
+type EventType int
+
 const (
 	// default event type
-	EventDefault = iota
+	Default EventType = iota
 
 	// event type for online and offline events
-	EventState
+	State
 )
 
 var (
-	eventMarshal = map[int]string{
-		EventDefault: "default",
-		EventState:   "state",
-	}
-	eventUnmarshal = map[string]int{
-		"default": EventDefault,
-		"state":   EventState,
+	eventUnmarshal = map[string]EventType{
+		"Default": Default,
+		"State":   State,
 	}
 )
 
-func MarshalEvent(event int) string {
-	if value, ok := eventMarshal[event]; ok {
-		return value
-	}
-	return eventMarshal[EventDefault]
-}
-
-func UnmarshalEvent(event string) int {
+func ParseEventType(event string) EventType {
 	if value, ok := eventUnmarshal[event]; ok {
 		return value
 	}
-	return EventDefault
+	return Default
 }

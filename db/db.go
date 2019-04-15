@@ -20,9 +20,10 @@ package db
 import (
 	"database/sql"
 	"errors"
-	"github.com/Comcast/codex/blacklist"
 	"strconv"
 	"time"
+
+	"github.com/Comcast/codex/blacklist"
 
 	"github.com/go-kit/kit/metrics/provider"
 	"github.com/goph/emperror"
@@ -79,13 +80,13 @@ type Connection struct {
 }
 
 type Record struct {
-	ID        int    `json:"id"`
-	Type      int    `json:"type"`
-	DeviceID  string `json:"deviceid"`
-	BirthDate int64  `json:"birthdate"`
-	DeathDate int64  `json:"deathdate"`
-	Data      []byte `json:"data"`
-	Nonce     []byte `json:"nonce"`
+	ID        int       `json:"id"`
+	Type      EventType `json:"type" gorm:"type:int"`
+	DeviceID  string    `json:"deviceid"`
+	BirthDate int64     `json:"birthdate"`
+	DeathDate int64     `json:"deathdate"`
+	Data      []byte    `json:"data"`
+	Nonce     []byte    `json:"nonce"`
 }
 
 // set Record's table name to be `events`
