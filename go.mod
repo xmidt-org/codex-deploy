@@ -3,7 +3,7 @@ module github.com/Comcast/codex
 go 1.12
 
 require (
-	github.com/Comcast/webpa-common v0.9.0-alpha.0.20190402211944-723a128f40c7
+	github.com/Comcast/webpa-common v1.0.0
 	github.com/DATA-DOG/godog v0.7.13
 	github.com/InVisionApp/go-health v2.1.0+incompatible
 	github.com/InVisionApp/go-logger v1.0.1

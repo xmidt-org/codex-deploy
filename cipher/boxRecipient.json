@@ -1,0 +1,7 @@
+{
+  "algorithm": {
+    "type": "box"
+  },
+  "recipientPrivateKey": "boxPrivate.pem",
+  "senderPublicKey": "sendBoxPublic.pem"
+}

@@ -114,6 +114,7 @@ func TestBoxCipher(t *testing.T) {
 
 	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(rand.Reader)
 	require.NoError(err)
+	require.NotEqual(recipientPublicKey, senderPublicKey)
 
 	encrypter := NewBoxEncrypter(*senderPrivateKey, *recipientPublicKey)
 	require.NotEmpty(encrypter)
