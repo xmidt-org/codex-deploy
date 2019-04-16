@@ -37,7 +37,7 @@ func (boxLoader *BoxLoader) getBoxPrivateKey() ([32]byte, error) {
 	if privatePem.Type != "BOX PRIVATE KEY" {
 		return privateKey, errors.New("incorrect pem type: " + privatePem.Type)
 	}
-	copy(privateKey[0:24], privatePem.Bytes[:])
+	copy(privateKey[0:32], privatePem.Bytes[:])
 	return privateKey, nil
 }
 
@@ -51,7 +51,7 @@ func (boxLoader *BoxLoader) getBoxPublicKey() ([32]byte, error) {
 	if publicPem.Type != "BOX PUBLIC KEY" {
 		return publicKey, errors.New("incorrect pem type: " + publicPem.Type)
 	}
-	copy(publicKey[0:24], publicPem.Bytes[:])
+	copy(publicKey[0:32], publicPem.Bytes[:])
 	return publicKey, nil
 }
 

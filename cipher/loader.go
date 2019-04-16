@@ -70,6 +70,14 @@ func (f *FileLoader) GetBytes() ([]byte, error) {
 	return ioutil.ReadFile(f.Path)
 }
 
+type BytesLoader struct {
+	Data []byte
+}
+
+func (b *BytesLoader) GetBytes() ([]byte, error) {
+	return b.Data, nil
+}
+
 func GetPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
 	data, err := loader.GetBytes()
 	if err != nil {
@@ -125,6 +133,9 @@ func (o *Options) LoadEncrypt() (Encrypt, error) {
 		case "noop":
 			return DefaultCipherEncrypter(), nil
 		case "box":
+			if o.SenderPrivateKey == "" || o.RecipientPublicKey == "" {
+				break
+			}
 			boxLoader := BoxLoader{
 				PrivateKey: &FileLoader{
 					Path: o.SenderPrivateKey,
@@ -136,6 +147,9 @@ func (o *Options) LoadEncrypt() (Encrypt, error) {
 			return boxLoader.LoadEncrypt()
 		case "basic":
 			if hashName, ok := o.Algorithm["hash"].(string); ok {
+				if o.SenderPrivateKey == "" || o.RecipientPublicKey == "" {
+					break
+				}
 				basicLoader := BasicLoader{
 					Hash: &BasicHashLoader{hashName},
 					PrivateKey: &FileLoader{
@@ -166,6 +180,9 @@ func (o *Options) LoadDecrypt() (Decrypt, error) {
 		case "noop":
 			return DefaultCipherDecrypter(), nil
 		case "box":
+			if o.RecipientPrivateKey == "" || o.SenderPublicKey == "" {
+				break
+			}
 			boxLoader := BoxLoader{
 				PrivateKey: &FileLoader{
 					Path: o.RecipientPrivateKey,
@@ -176,6 +193,9 @@ func (o *Options) LoadDecrypt() (Decrypt, error) {
 			}
 			return boxLoader.LoadDecrypt()
 		case "basic":
+			if o.RecipientPrivateKey == "" || o.SenderPublicKey == "" {
+				break
+			}
 			if hashName, ok := o.Algorithm["hash"].(string); ok {
 				basicLoader := BasicLoader{
 					Hash: &BasicHashLoader{hashName},
