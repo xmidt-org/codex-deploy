@@ -21,7 +21,7 @@ const (
 type Options []Config
 
 type Ciphers struct {
-	options map[AlgorithmType]map[string]Decrypt
+	Options map[AlgorithmType]map[string]Decrypt
 }
 
 func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
@@ -38,22 +38,22 @@ func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
 
 func PopulateCiphers(o Options, logger log.Logger) Ciphers {
 	c := Ciphers{
-		options: map[AlgorithmType]map[string]Decrypt{},
+		Options: map[AlgorithmType]map[string]Decrypt{},
 	}
 	for _, elem := range o {
 		elem.Logger = logger
 		if decrypter, err := elem.LoadDecrypt(); err == nil {
-			if _, ok := c.options[elem.Type]; !ok {
-				c.options[elem.Type] = map[string]Decrypt{}
+			if _, ok := c.Options[elem.Type]; !ok {
+				c.Options[elem.Type] = map[string]Decrypt{}
 			}
-			c.options[elem.Type][elem.KID] = decrypter
+			c.Options[elem.Type][elem.KID] = decrypter
 		}
 	}
 	return c
 }
 
 func (c *Ciphers) Get(alg AlgorithmType, KID string) (Decrypt, bool) {
-	if d, ok := c.options[alg][KID]; ok {
+	if d, ok := c.Options[alg][KID]; ok {
 		return d, ok
 	}
 	return nil, false
