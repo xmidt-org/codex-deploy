@@ -2,8 +2,6 @@ package cipher
 
 import (
 	"encoding/json"
-	"github.com/Comcast/webpa-common/logging"
-	"github.com/go-kit/kit/log"
 	"github.com/goph/emperror"
 	"github.com/spf13/viper"
 )
@@ -19,26 +17,16 @@ const (
 	CipherKey = "cipher"
 )
 
-type Options struct {
-	Logger log.Logger
-
-	o []Config
-}
+type Options []Config
 
 type Ciphers struct {
-	Logger log.Logger
-
 	options map[string]Decrypt
 }
 
 func (o Options) LoadEncrypt() (Encrypt, error) {
-	if o.Logger == nil {
-		o.Logger = logging.DefaultLogger()
-	}
 	var lastErr error
-	for _, elem := range o.o {
+	for _, elem := range o {
 		if encrypter, err := elem.LoadEncrypt(); err == nil {
-			elem.Logger = o.Logger
 			return encrypter, nil
 		} else {
 			lastErr = err
@@ -51,11 +39,7 @@ func PopulateCiphers(o Options) Ciphers {
 	c := Ciphers{
 		options: map[string]Decrypt{},
 	}
-	if o.Logger == nil {
-		o.Logger = logging.DefaultLogger()
-	}
-	for _, elem := range o.o {
-		elem.Logger = o.Logger
+	for _, elem := range o {
 		if decrypter, err := elem.LoadDecrypt(); err == nil {
 			c.options[elem.KID] = decrypter
 		}
@@ -76,7 +60,7 @@ func FromViper(v *viper.Viper) (o Options, err error) {
 	obj := v.Get("cipher")
 	data, err := json.Marshal(obj)
 	if err != nil {
-		return Options{o: []Config{}}, emperror.Wrap(err, "failed to load cipher config")
+		return []Config{}, emperror.Wrap(err, "failed to load cipher config")
 	}
 
 	err = json.Unmarshal(data, &o)
