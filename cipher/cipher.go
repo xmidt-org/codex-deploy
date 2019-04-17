@@ -111,46 +111,29 @@ func (*NOOP) DecryptMessage(cipher []byte, nonce []byte) (message []byte, err er
 	return cipher, nil
 }
 
-type rsaEncrypter struct {
-	kid                string
-	hasher             crypto.Hash
-	senderPrivateKey   *rsa.PrivateKey
-	recipientPublicKey *rsa.PublicKey
-	label              []byte
-}
-
-func (c *rsaEncrypter) GetAlgorithm() AlgorithmType {
-	if c.recipientPublicKey == nil {
+func (c *rsaEncrypterDecrypter) GetAlgorithm() AlgorithmType {
+	if c.recipientPublicKey == nil || c.senderPublicKey == nil {
 		return RSASymmetric
 	}
 	return RSAAsymmetric
 }
 
-func (c *rsaEncrypter) GetKID() string {
+func (c *rsaEncrypterDecrypter) GetKID() string {
 	return c.kid
 }
 
-type rsaDecrypter struct {
+type rsaEncrypterDecrypter struct {
 	kid                 string
 	hasher              crypto.Hash
+	recipientPublicKey  *rsa.PublicKey
 	recipientPrivateKey *rsa.PrivateKey
 	senderPublicKey     *rsa.PublicKey
+	senderPrivateKey    *rsa.PrivateKey
 	label               []byte
 }
 
-func (c *rsaDecrypter) GetAlgorithm() AlgorithmType {
-	if c.senderPublicKey == nil {
-		return RSASymmetric
-	}
-	return RSAAsymmetric
-}
-
-func (c *rsaDecrypter) GetKID() string {
-	return c.kid
-}
-
 func NewRSAEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipientPublicKey *rsa.PublicKey, kid string) Encrypt {
-	return &rsaEncrypter{
+	return &rsaEncrypterDecrypter{
 		kid:                kid,
 		hasher:             hash,
 		senderPrivateKey:   senderPrivateKey,
@@ -160,7 +143,7 @@ func NewRSAEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipie
 }
 
 func NewRSADecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, senderPublicKey *rsa.PublicKey, kid string) Decrypt {
-	return &rsaDecrypter{
+	return &rsaEncrypterDecrypter{
 		kid:                 kid,
 		hasher:              hash,
 		recipientPrivateKey: recipientPrivateKey,
@@ -169,7 +152,7 @@ func NewRSADecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, send
 	}
 }
 
-func (c *rsaEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
+func (c *rsaEncrypterDecrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
@@ -200,7 +183,7 @@ func (c *rsaEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	return cipherdata, signature, nil
 }
 
-func (c *rsaDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
+func (c *rsaEncrypterDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
