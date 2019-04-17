@@ -44,8 +44,18 @@ func init() {
 	})
 }
 
+type Identification interface {
+	// GetAlgorithm will return the algorithm Encrypt and Decrypt uses
+	GetAlgorithm() AlgorithmType
+
+	// GetKID returns the id of the specific keys used
+	GetKID() string
+}
+
 // Encrypt represents the ability to encrypt messages
 type Encrypt interface {
+	Identification
+
 	// EncryptMessage attempts to encode the message into an array of bytes.
 	// and error will be returned if failed to encode the message.
 	EncryptMessage(message []byte) (crypt []byte, nonce []byte, err error)
@@ -53,6 +63,8 @@ type Encrypt interface {
 
 // Decrypt represents the ability to decrypt messages
 type Decrypt interface {
+	Identification
+
 	// DecryptMessage attempts to decode the message into a string.
 	// and error will be returned if failed to decode the message.
 	DecryptMessage(cipher []byte, nonce []byte) (message []byte, err error)
@@ -83,6 +95,14 @@ func DefaultCipherDecrypter() Decrypt {
 // NOOP will just return the message
 type NOOP struct{}
 
+func (*NOOP) GetAlgorithm() AlgorithmType {
+	return None
+}
+
+func (*NOOP) GetKID() string {
+	return "none"
+}
+
 func (*NOOP) EncryptMessage(message []byte) (crypt []byte, nonce []byte, err error) {
 	return message, []byte{}, nil
 }
@@ -91,39 +111,65 @@ func (*NOOP) DecryptMessage(cipher []byte, nonce []byte) (message []byte, err er
 	return cipher, nil
 }
 
-type basicEncrypter struct {
+type rsaEncrypter struct {
+	kid                string
 	hasher             crypto.Hash
 	senderPrivateKey   *rsa.PrivateKey
 	recipientPublicKey *rsa.PublicKey
 	label              []byte
 }
 
-type basicDecrypter struct {
+func (c *rsaEncrypter) GetAlgorithm() AlgorithmType {
+	if c.recipientPublicKey == nil {
+		return RSASymmetric
+	}
+	return RSAAsymmetric
+}
+
+func (c *rsaEncrypter) GetKID() string {
+	return c.kid
+}
+
+type rsaDecrypter struct {
+	kid                 string
 	hasher              crypto.Hash
 	recipientPrivateKey *rsa.PrivateKey
 	senderPublicKey     *rsa.PublicKey
 	label               []byte
 }
 
-func NewBasicEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipientPublicKey *rsa.PublicKey) Encrypt {
-	return &basicEncrypter{
+func (c *rsaDecrypter) GetAlgorithm() AlgorithmType {
+	if c.senderPublicKey == nil {
+		return RSASymmetric
+	}
+	return RSAAsymmetric
+}
+
+func (c *rsaDecrypter) GetKID() string {
+	return c.kid
+}
+
+func NewRSAEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipientPublicKey *rsa.PublicKey, kid string) Encrypt {
+	return &rsaEncrypter{
+		kid:                kid,
 		hasher:             hash,
 		senderPrivateKey:   senderPrivateKey,
 		recipientPublicKey: recipientPublicKey,
-		label:              []byte("codex-basic-encrypter"),
+		label:              []byte("codex-rsa-cipher"),
 	}
 }
 
-func NewBasicDecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, senderPublicKey *rsa.PublicKey) Decrypt {
-	return &basicDecrypter{
+func NewRSADecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, senderPublicKey *rsa.PublicKey, kid string) Decrypt {
+	return &rsaDecrypter{
+		kid:                 kid,
 		hasher:              hash,
 		recipientPrivateKey: recipientPrivateKey,
 		senderPublicKey:     senderPublicKey,
-		label:               []byte("codex-basic-encrypter"),
+		label:               []byte("codex-rsa-cipher"),
 	}
 }
 
-func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
+func (c *rsaEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
@@ -135,22 +181,26 @@ func (c *basicEncrypter) EncryptMessage(message []byte) ([]byte, []byte, error) 
 		return []byte(""), []byte{}, emperror.Wrap(err, "failed to encrypt message")
 	}
 
-	var opts rsa.PSSOptions
-	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
+	signature := []byte{}
 
-	pssh := c.hasher.New()
-	pssh.Write(message)
-	hashed := pssh.Sum(nil)
+	if c.senderPrivateKey != nil {
+		var opts rsa.PSSOptions
+		opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
 
-	signature, err := rsa.SignPSS(rand.Reader, c.senderPrivateKey, c.hasher, hashed, &opts)
-	if err != nil {
-		return []byte(""), []byte{}, emperror.Wrap(err, "failed to sign message")
+		pssh := c.hasher.New()
+		pssh.Write(message)
+		hashed := pssh.Sum(nil)
+
+		signature, err = rsa.SignPSS(rand.Reader, c.senderPrivateKey, c.hasher, hashed, &opts)
+		if err != nil {
+			return []byte(""), []byte{}, emperror.Wrap(err, "failed to sign message")
+		}
 	}
 
 	return cipherdata, signature, nil
 }
 
-func (c *basicDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
+func (c *rsaDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
 		rand.Reader,
@@ -162,30 +212,42 @@ func (c *basicDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, er
 		return []byte{}, emperror.Wrap(err, "failed to decrypt message")
 	}
 
-	var opts rsa.PSSOptions
-	opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
+	if c.senderPublicKey != nil {
+		var opts rsa.PSSOptions
+		opts.SaltLength = rsa.PSSSaltLengthAuto // for simple example
 
-	pssh := c.hasher.New()
-	pssh.Write(decrypted)
-	hashed := pssh.Sum(nil)
+		pssh := c.hasher.New()
+		pssh.Write(decrypted)
+		hashed := pssh.Sum(nil)
 
-	err = rsa.VerifyPSS(c.senderPublicKey, c.hasher, hashed, nonce, &opts)
-	if err != nil {
-		return []byte{}, emperror.Wrap(err, "failed to validate signature")
+		err = rsa.VerifyPSS(c.senderPublicKey, c.hasher, hashed, nonce, &opts)
+		if err != nil {
+			return []byte{}, emperror.Wrap(err, "failed to validate signature")
+		}
 	}
 
 	return decrypted, nil
 }
 
 type encryptBox struct {
+	kid                string
 	senderPrivateKey   [32]byte
 	recipientPublicKey [32]byte
 	sharedEncryptKey   *[32]byte
 }
 
-func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte) Encrypt {
+func (enBox *encryptBox) GetAlgorithm() AlgorithmType {
+	return Box
+}
+
+func (enBox *encryptBox) GetKID() string {
+	return enBox.kid
+}
+
+func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte, kid string) Encrypt {
 
 	encrypter := encryptBox{
+		kid:                kid,
 		senderPrivateKey:   senderPrivateKey,
 		recipientPublicKey: recipientPublicKey,
 		sharedEncryptKey:   new([32]byte),
@@ -208,14 +270,24 @@ func (enBox *encryptBox) EncryptMessage(message []byte) ([]byte, []byte, error) 
 }
 
 type decryptBox struct {
+	kid                 string
 	recipientPrivateKey [32]byte
 	senderPublicKey     [32]byte
 	sharedDecryptKey    *[32]byte
 }
 
-func NewBoxDecrypter(recipientPrivateKey [32]byte, senderPublicKey [32]byte) Decrypt {
+func (deBox *decryptBox) GetAlgorithm() AlgorithmType {
+	return Box
+}
+
+func (deBox *decryptBox) GetKID() string {
+	return deBox.kid
+}
+
+func NewBoxDecrypter(recipientPrivateKey [32]byte, senderPublicKey [32]byte, kid string) Decrypt {
 
 	decrypter := decryptBox{
+		kid:                 kid,
 		recipientPrivateKey: recipientPrivateKey,
 		senderPublicKey:     senderPublicKey,
 		sharedDecryptKey:    new([32]byte),

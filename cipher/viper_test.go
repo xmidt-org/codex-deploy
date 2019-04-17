@@ -25,7 +25,7 @@ func TestViper(t *testing.T) {
 
 	encrypter, err := options.LoadEncrypt()
 	assert.NoError(err)
-	assert.NotEmpty(options)
+	assert.NotNil(encrypter)
 
 	msg := "hello"
 	data, _, err := encrypter.EncryptMessage([]byte(msg))
@@ -86,16 +86,21 @@ func TestBoxBothSides(t *testing.T) {
 	options, err = FromViper(vRec)
 	assert.NoError(err)
 
-	decrypter, err := options.LoadDecrypt()
+	decrypters := PopulateCiphers(options)
+
 	assert.NoError(err)
 
 	msg := []byte("hello")
 	data, nonce, err := encrypter.EncryptMessage(msg)
 	assert.NoError(err)
 
-	decodedMSG, err := decrypter.DecryptMessage(data, nonce)
-	assert.NoError(err)
+	if decrypter, ok := decrypters.Get(encrypter.GetKID()); ok {
+		decodedMSG, err := decrypter.DecryptMessage(data, nonce)
+		assert.NoError(err)
 
-	assert.Equal(msg, decodedMSG)
+		assert.Equal(msg, decodedMSG)
+	} else {
+		assert.Fail("failed to get decrypter with kid")
+	}
 
 }

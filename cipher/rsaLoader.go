@@ -49,13 +49,14 @@ func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
 	return 0, errors.New("hashname " + b.HashName + " not found")
 }
 
-type BasicLoader struct {
+type RSALoader struct {
+	KID        string
 	Hash       HashLoader
 	PrivateKey KeyLoader
 	PublicKey  KeyLoader
 }
 
-func (loader *BasicLoader) LoadEncrypt() (Encrypt, error) {
+func (loader *RSALoader) LoadEncrypt() (Encrypt, error) {
 	hashFunc, err := loader.Hash.GetHash()
 	if err != nil {
 		return nil, err
@@ -65,21 +66,13 @@ func (loader *BasicLoader) LoadEncrypt() (Encrypt, error) {
 	if err != nil {
 		return nil, err
 	}
+	privateKey, _ := GetPrivateKey(loader.PrivateKey)
 
-	privateKey, err := GetPrivateKey(loader.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return NewBasicEncrypter(hashFunc, privateKey, publicKey), nil
+	return NewRSAEncrypter(hashFunc, privateKey, publicKey, loader.KID), nil
 }
 
-func (loader *BasicLoader) LoadDecrypt() (Decrypt, error) {
+func (loader *RSALoader) LoadDecrypt() (Decrypt, error) {
 	hashFunc, err := loader.Hash.GetHash()
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := GetPublicKey(loader.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -88,5 +81,8 @@ func (loader *BasicLoader) LoadDecrypt() (Decrypt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewBasicDecrypter(hashFunc, privateKey, publicKey), nil
+
+	publicKey, _ := GetPublicKey(loader.PublicKey)
+
+	return NewRSADecrypter(hashFunc, privateKey, publicKey, loader.KID), nil
 }

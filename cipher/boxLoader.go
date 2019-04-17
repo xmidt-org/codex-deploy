@@ -23,6 +23,7 @@ import (
 )
 
 type BoxLoader struct {
+	KID        string
 	PrivateKey KeyLoader
 	PublicKey  KeyLoader
 }
@@ -65,7 +66,7 @@ func (boxLoader *BoxLoader) LoadEncrypt() (Encrypt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewBoxEncrypter(privateKey, publicKey), nil
+	return NewBoxEncrypter(privateKey, publicKey, boxLoader.KID), nil
 }
 
 func (boxLoader *BoxLoader) LoadDecrypt() (Decrypt, error) {
@@ -78,5 +79,5 @@ func (boxLoader *BoxLoader) LoadDecrypt() (Decrypt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewBoxDecrypter(privateKey, publicKey), nil
+	return NewBoxDecrypter(privateKey, publicKey, boxLoader.KID), nil
 }

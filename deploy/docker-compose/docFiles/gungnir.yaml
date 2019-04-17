@@ -38,7 +38,12 @@ db:
   connectTimeout: 1m
   opTimeout: 100ms
 
-
 cipher:
-  hashName: "MD5"
-  path: "/etc/gungnir/private.pem"
+  - type: rsa-sym
+    kid: "basic-sha"
+    params:
+      hash: SHA512
+    keys:
+      privateKey: "/etc/gungnir/private.pem"
+  - type: none
+    kid: none

@@ -1,8 +1,14 @@
 {
-  "algorithm": {
-    "type": "basic",
-    "hash": "SHA512"
-  },
-  "senderPrivateKey": "private.pem",
-  "recipientPublicKey": "public.pem"
+  "cipher": [
+    {
+      "type": "rsa-sym",
+      "params": {
+        "hash": "SHA512"
+      },
+      "keys": {
+        "publicKey": "public.pem",
+        "privateKey": "private.pem"
+      }
+    }
+  ]
 }

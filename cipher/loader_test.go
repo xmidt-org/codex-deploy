@@ -31,7 +31,7 @@ func TestBasicCipherLoader(t *testing.T) {
 	dir, err := os.Getwd()
 	assert.NoError(err)
 
-	encrypter, err := (&BasicLoader{
+	encrypter, err := (&RSALoader{
 		Hash: &BasicHashLoader{HashName: "SHA512"},
 		PrivateKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
@@ -43,7 +43,7 @@ func TestBasicCipherLoader(t *testing.T) {
 	assert.NotEmpty(encrypter)
 	assert.NoError(err)
 
-	decrypter, err := (&BasicLoader{
+	decrypter, err := (&RSALoader{
 		Hash: &BasicHashLoader{HashName: "SHA512"},
 		PrivateKey: &FileLoader{
 			Path: dir + string(os.PathSeparator) + "private.pem",
@@ -74,42 +74,49 @@ func TestLoadOptions(t *testing.T) {
 
 	testData := []struct {
 		description string
-		option      Options
+		config      Config
 		errOnLarge  bool
 	}{
-		{"noop", Options{Algorithm: map[string]interface{}{"type": "noop"}}, false},
-		{"basic", Options{
-			Logger:              logging.NewTestLogger(nil, t),
-			Algorithm:           map[string]interface{}{"type": "basic", "hash": "SHA512"},
-			SenderPublicKey:     dir + string(os.PathSeparator) + "public.pem",
-			SenderPrivateKey:    dir + string(os.PathSeparator) + "private.pem",
-			RecipientPrivateKey: dir + string(os.PathSeparator) + "private.pem",
-			RecipientPublicKey:  dir + string(os.PathSeparator) + "public.pem",
+		{"noop", Config{Type: None}, false},
+		{"basic", Config{
+			Logger: logging.NewTestLogger(nil, t),
+			Type:   RSAAsymmetric,
+			Params: map[string]string{"hash": "SHA512"},
+			KID:    "neato",
+			Keys: map[KeyType]string{
+				SenderPrivateKey:    dir + string(os.PathSeparator) + "private.pem",
+				SenderPublicKey:     dir + string(os.PathSeparator) + "public.pem",
+				RecipientPrivateKey: dir + string(os.PathSeparator) + "private.pem",
+				RecipientPublicKey:  dir + string(os.PathSeparator) + "public.pem",
+			},
 		}, true},
-		{"box", Options{
-			Logger:              logging.NewTestLogger(nil, t),
-			Algorithm:           map[string]interface{}{"type": "box"},
-			SenderPublicKey:     dir + string(os.PathSeparator) + "boxPublic.pem",
-			SenderPrivateKey:    dir + string(os.PathSeparator) + "boxPrivate.pem",
-			RecipientPrivateKey: dir + string(os.PathSeparator) + "boxPrivate.pem",
-			RecipientPublicKey:  dir + string(os.PathSeparator) + "boxPublic.pem",
+		{"box", Config{
+			Logger: logging.NewTestLogger(nil, t),
+			Type:   Box,
+			KID:    "coolio",
+			Keys: map[KeyType]string{
+				SenderPrivateKey:    dir + string(os.PathSeparator) + "sendBoxPrivate.pem",
+				SenderPublicKey:     dir + string(os.PathSeparator) + "sendBoxPublic.pem",
+				RecipientPrivateKey: dir + string(os.PathSeparator) + "boxPrivate.pem",
+				RecipientPublicKey:  dir + string(os.PathSeparator) + "boxPublic.pem",
+			},
 		}, true},
 	}
 
 	for _, tc := range testData {
 		t.Run(tc.description, func(t *testing.T) {
-			testOptions(t, tc.option, tc.errOnLarge)
+			testOptions(t, tc.config, tc.errOnLarge)
 		})
 	}
 }
 
-func testOptions(t *testing.T, o Options, errOnLarge bool) {
+func testOptions(t *testing.T, c Config, errOnLarge bool) {
 	require := require.New(t)
 
-	encrypter, err := o.LoadEncrypt()
+	encrypter, err := c.LoadEncrypt()
 	require.NoError(err)
 
-	decrypter, err := o.LoadDecrypt()
+	decrypter, err := c.LoadDecrypt()
 	require.NoError(err)
 
 	testCryptoPair(t, encrypter, decrypter, errOnLarge)
