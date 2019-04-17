@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"fmt"
 	"github.com/Comcast/webpa-common/logging"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -95,7 +96,7 @@ func TestBoxBothSides(t *testing.T) {
 	data, nonce, err := encrypter.EncryptMessage(msg)
 	assert.NoError(err)
 
-	if decrypter, ok := decrypters.Get(encrypter.GetKID()); ok {
+	if decrypter, ok := decrypters.Get(encrypter.GetAlgorithm(), encrypter.GetKID()); ok {
 		decodedMSG, err := decrypter.DecryptMessage(data, nonce)
 		assert.NoError(err)
 
@@ -103,5 +104,40 @@ func TestBoxBothSides(t *testing.T) {
 	} else {
 		assert.Fail("failed to get decrypter with kid")
 	}
+}
 
+func TestGetDecrypterErr(t *testing.T) {
+	assert := assert.New(t)
+
+	vSend := viper.New()
+	path, err := os.Getwd()
+	assert.NoError(err)
+	vSend.AddConfigPath(path)
+	vSend.SetConfigName("boxRecipient")
+	if err := vSend.ReadInConfig(); err != nil {
+		t.Fatalf("%s\n", err)
+	}
+
+	options, err := FromViper(vSend)
+	assert.NoError(err)
+
+	decrypters := PopulateCiphers(options, logging.NewTestLogger(nil, t))
+	fmt.Printf("%#v\n", decrypters)
+
+	decrypter, ok := decrypters.Get(Box, "test")
+	assert.True(ok)
+	assert.NotNil(decrypter)
+
+	decrypter, ok = decrypters.Get(None, "none")
+	assert.True(ok)
+	assert.NotNil(decrypter)
+
+	// negative test
+	decrypter, ok = decrypters.Get(None, "neato")
+	assert.False(ok)
+	assert.Nil(decrypter)
+
+	decrypter, ok = decrypters.Get(RSAAsymmetric, "testing")
+	assert.False(ok)
+	assert.Nil(decrypter)
 }
