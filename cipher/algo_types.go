@@ -25,3 +25,14 @@ const (
 	RSASymmetric  AlgorithmType = "rsa-sym"
 	RSAAsymmetric AlgorithmType = "rsa-asy"
 )
+
+func ParseAlogrithmType(algo string) AlgorithmType {
+	if algo == string(Box) {
+		return Box
+	} else if algo == string(RSASymmetric) {
+		return RSASymmetric
+	} else if algo == string(RSAAsymmetric) {
+		return RSAAsymmetric
+	}
+	return None
+}
