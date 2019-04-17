@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"github.com/Comcast/webpa-common/logging"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -23,7 +24,7 @@ func TestViper(t *testing.T) {
 	options, err := FromViper(v)
 	assert.NoError(err)
 
-	encrypter, err := options.LoadEncrypt()
+	encrypter, err := options.GetEncrypter(logging.NewTestLogger(nil, t))
 	assert.NoError(err)
 	assert.NotNil(encrypter)
 
@@ -49,7 +50,7 @@ func TestNOOPViper(t *testing.T) {
 	options, err := FromViper(v)
 	assert.NoError(err)
 
-	encrypter, err := options.LoadEncrypt()
+	encrypter, err := options.GetEncrypter(logging.NewTestLogger(nil, t))
 
 	msg := "hello"
 	data, _, err := encrypter.EncryptMessage([]byte(msg))
@@ -72,7 +73,7 @@ func TestBoxBothSides(t *testing.T) {
 	options, err := FromViper(vSend)
 	assert.NoError(err)
 
-	encrypter, err := options.LoadEncrypt()
+	encrypter, err := options.GetEncrypter(logging.NewTestLogger(nil, t))
 	assert.NoError(err)
 
 	vRec := viper.New()
@@ -86,7 +87,7 @@ func TestBoxBothSides(t *testing.T) {
 	options, err = FromViper(vRec)
 	assert.NoError(err)
 
-	decrypters := PopulateCiphers(options)
+	decrypters := PopulateCiphers(options, logging.NewTestLogger(nil, t))
 
 	assert.NoError(err)
 

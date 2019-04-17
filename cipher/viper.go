@@ -2,6 +2,7 @@ package cipher
 
 import (
 	"encoding/json"
+	"github.com/go-kit/kit/log"
 	"github.com/goph/emperror"
 	"github.com/spf13/viper"
 )
@@ -23,7 +24,7 @@ type Ciphers struct {
 	options map[string]Decrypt
 }
 
-func (o Options) LoadEncrypt() (Encrypt, error) {
+func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
 	var lastErr error
 	for _, elem := range o {
 		if encrypter, err := elem.LoadEncrypt(); err == nil {
@@ -35,11 +36,12 @@ func (o Options) LoadEncrypt() (Encrypt, error) {
 	return DefaultCipherEncrypter(), emperror.Wrap(lastErr, "failed to load encrypt options")
 }
 
-func PopulateCiphers(o Options) Ciphers {
+func PopulateCiphers(o Options, logger log.Logger) Ciphers {
 	c := Ciphers{
 		options: map[string]Decrypt{},
 	}
 	for _, elem := range o {
+		elem.Logger = logger
 		if decrypter, err := elem.LoadDecrypt(); err == nil {
 			c.options[elem.KID] = decrypter
 		}
