@@ -87,6 +87,8 @@ type Record struct {
 	DeathDate int64     `json:"deathdate"`
 	Data      []byte    `json:"data"`
 	Nonce     []byte    `json:"nonce"`
+	Alg       string    `json:"alg"`
+	KID       string    `json:"kid" gorm:"Column:kid"`
 }
 
 // set Record's table name to be `events`

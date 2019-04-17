@@ -1,7 +1,12 @@
 {
-  "algorithm": {
-    "type": "box"
-  },
-  "senderPrivateKey": "sendBoxPrivate.pem",
-  "recipientPublicKey": "boxPublic.pem"
+  "cipher": [
+    {
+      "type": "box",
+      "kid": "test",
+      "keys": {
+        "senderPrivateKey": "sendBoxPrivate.pem",
+        "recipientPublicKey": "boxPublic.pem"
+      }
+    }
+  ]
 }

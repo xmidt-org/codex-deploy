@@ -74,5 +74,11 @@ webhook:
 
 
 cipher:
-  hashName: "MD5"
-  path: "/etc/svalinn/public.pem"
+  - type: rsa-sym
+    kid: "basic-sha"
+    params:
+      hash: SHA512
+    keys:
+      publicKey: "/etc/svalinn/public.pem"
+  - type: none
+    kid: none

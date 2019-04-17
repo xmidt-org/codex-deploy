@@ -51,9 +51,9 @@ func TestBasicCrypt(t *testing.T) {
 			recipientPrivateKey := GeneratePrivateKey(tc.size)
 			require.NotNil(recipientPrivateKey)
 
-			encrypter := NewBasicEncrypter(tc.hashAlgo, senderPrivateKey, &recipientPrivateKey.PublicKey)
+			encrypter := NewRSAEncrypter(tc.hashAlgo, senderPrivateKey, &recipientPrivateKey.PublicKey, "")
 			require.NotEmpty(encrypter)
-			decrypter := NewBasicDecrypter(tc.hashAlgo, recipientPrivateKey, &senderPrivateKey.PublicKey)
+			decrypter := NewRSADecrypter(tc.hashAlgo, recipientPrivateKey, &senderPrivateKey.PublicKey, "")
 			require.NotEmpty(decrypter)
 
 			testCryptoPair(t, encrypter, decrypter, tc.errOnLarge)
@@ -116,9 +116,9 @@ func TestBoxCipher(t *testing.T) {
 	require.NoError(err)
 	require.NotEqual(recipientPublicKey, senderPublicKey)
 
-	encrypter := NewBoxEncrypter(*senderPrivateKey, *recipientPublicKey)
+	encrypter := NewBoxEncrypter(*senderPrivateKey, *recipientPublicKey, "")
 	require.NotEmpty(encrypter)
-	decrypter := NewBoxDecrypter(*recipientPrivateKey, *senderPublicKey)
+	decrypter := NewBoxDecrypter(*recipientPrivateKey, *senderPublicKey, "")
 	require.NotEmpty(decrypter)
 
 	testCryptoPair(t, encrypter, decrypter, false)

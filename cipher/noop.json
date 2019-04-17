@@ -1,5 +1,7 @@
 {
-  "algorithm": {
-    "type": "noop"
-  }
+  "cipher": [
+    {
+      "type": "none"
+    }
+  ]
 }

@@ -1,6 +1,9 @@
 package cipher
 
 import (
+	"encoding/json"
+	"github.com/go-kit/kit/log"
+	"github.com/goph/emperror"
 	"github.com/spf13/viper"
 )
 
@@ -15,25 +18,56 @@ const (
 	CipherKey = "cipher"
 )
 
-// Sub returns the standard child Viper, using CipherKey, for this package.
-// If passed nil, this function returns nil.
-func Sub(v *viper.Viper) *viper.Viper {
-	if v != nil {
-		return v.Sub(CipherKey)
-	}
+type Options []Config
 
-	return nil
+type Ciphers struct {
+	Options map[AlgorithmType]map[string]Decrypt
+}
+
+func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
+	var lastErr error
+	for _, elem := range o {
+		if encrypter, err := elem.LoadEncrypt(); err == nil {
+			return encrypter, nil
+		} else {
+			lastErr = err
+		}
+	}
+	return DefaultCipherEncrypter(), emperror.Wrap(lastErr, "failed to load encrypt options")
+}
+
+func PopulateCiphers(o Options, logger log.Logger) Ciphers {
+	c := Ciphers{
+		Options: map[AlgorithmType]map[string]Decrypt{},
+	}
+	for _, elem := range o {
+		elem.Logger = logger
+		if decrypter, err := elem.LoadDecrypt(); err == nil {
+			if _, ok := c.Options[elem.Type]; !ok {
+				c.Options[elem.Type] = map[string]Decrypt{}
+			}
+			c.Options[elem.Type][elem.KID] = decrypter
+		}
+	}
+	return c
+}
+
+func (c *Ciphers) Get(alg AlgorithmType, KID string) (Decrypt, bool) {
+	if d, ok := c.Options[alg][KID]; ok {
+		return d, ok
+	}
+	return nil, false
 }
 
 // FromViper produces an Options from a (possibly nil) Viper instance.
-// Callers should use FromViper(Sub(v)) if the standard subkey is desired.
-func FromViper(v *viper.Viper) (*Options, error) {
-	o := new(Options)
-	if v != nil {
-		if err := v.Unmarshal(o); err != nil {
-			return nil, err
-		}
+// cipher key is expected
+func FromViper(v *viper.Viper) (o Options, err error) {
+	obj := v.Get("cipher")
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return []Config{}, emperror.Wrap(err, "failed to load cipher config")
 	}
 
-	return o, nil
+	err = json.Unmarshal(data, &o)
+	return
 }
