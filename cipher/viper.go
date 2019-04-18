@@ -1,7 +1,6 @@
 package cipher
 
 import (
-	"encoding/json"
 	"github.com/go-kit/kit/log"
 	"github.com/goph/emperror"
 	"github.com/spf13/viper"
@@ -62,12 +61,6 @@ func (c *Ciphers) Get(alg AlgorithmType, KID string) (Decrypt, bool) {
 // FromViper produces an Options from a (possibly nil) Viper instance.
 // cipher key is expected
 func FromViper(v *viper.Viper) (o Options, err error) {
-	obj := v.Get("cipher")
-	data, err := json.Marshal(obj)
-	if err != nil {
-		return []Config{}, emperror.Wrap(err, "failed to load cipher config")
-	}
-
-	err = json.Unmarshal(data, &o)
+	err = v.UnmarshalKey(CipherKey, &o)
 	return
 }
