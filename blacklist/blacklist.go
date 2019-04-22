@@ -1,11 +1,16 @@
 package blacklist
 
 import (
-	"github.com/Comcast/webpa-common/logging"
-	"github.com/go-kit/kit/log"
 	"regexp"
 	"sync"
 	"time"
+
+	"github.com/Comcast/webpa-common/logging"
+	"github.com/go-kit/kit/log"
+)
+
+const (
+	defaultUpdateInterval = time.Minute
 )
 
 type BlackListedItem struct {
@@ -94,6 +99,9 @@ type RefresherConfig struct {
 func NewListRefresher(config RefresherConfig, updater Updater, stop chan struct{}) List {
 	if config.Logger == nil {
 		config.Logger = logging.DefaultLogger()
+	}
+	if config.UpdateInterval == time.Duration(0)*time.Second {
+		config.UpdateInterval = defaultUpdateInterval
 	}
 	listDB := listRefresher{
 		logger:  config.Logger,
