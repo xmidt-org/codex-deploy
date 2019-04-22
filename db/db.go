@@ -39,6 +39,17 @@ var (
 	errNoEvents         = errors.New("no records to be inserted")
 )
 
+const (
+	defaultPruneLimit     = 0
+	defaultConnectTimeout = time.Duration(10) * time.Second
+	defaultOpTimeout      = time.Duration(10) * time.Second
+	defaultNumRetries     = 0
+	defaultWaitTimeMult   = 1
+	defaultPingInterval   = time.Second
+	defaultMaxIdleConns   = 2
+	defaultMaxOpenConns   = 0
+)
+
 // Config contains the initial configuration information needed to create a db connection.
 type Config struct {
 	Server         string
@@ -109,6 +120,8 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 		pruneLimit: config.PruneLimit,
 	}
 
+	validateConfig(&config)
+
 	// pq expects seconds
 	connectTimeout := strconv.Itoa(int(config.ConnectTimeout.Seconds()))
 
@@ -164,10 +177,38 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 	return &db, nil
 }
 
-func (db *Connection) configure(maxIdleConns int, maxOpenConns int) {
-	if maxIdleConns < 2 {
-		maxIdleConns = 2
+func validateConfig(config *Config) {
+	zeroDuration := time.Duration(0) * time.Second
+
+	// TODO: check if username, server, or database is empty?
+
+	if config.PruneLimit < 0 {
+		config.PruneLimit = defaultPruneLimit
 	}
+	if config.ConnectTimeout == zeroDuration {
+		config.ConnectTimeout = defaultConnectTimeout
+	}
+	if config.OpTimeout == zeroDuration {
+		config.OpTimeout = defaultOpTimeout
+	}
+	if config.NumRetries < 0 {
+		config.NumRetries = defaultNumRetries
+	}
+	if config.WaitTimeMult < 1 {
+		config.WaitTimeMult = defaultWaitTimeMult
+	}
+	if config.PingInterval == zeroDuration {
+		config.PingInterval = defaultPingInterval
+	}
+	if config.MaxIdleConns < 2 {
+		config.MaxIdleConns = defaultMaxIdleConns
+	}
+	if config.MaxOpenConns < 0 {
+		config.MaxOpenConns = defaultMaxOpenConns
+	}
+}
+
+func (db *Connection) configure(maxIdleConns int, maxOpenConns int) {
 	db.gennericDB.SetMaxIdleConns(maxIdleConns)
 	db.gennericDB.SetMaxOpenConns(maxOpenConns)
 }
