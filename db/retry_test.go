@@ -19,9 +19,10 @@ package db
 
 import (
 	"errors"
-	"github.com/Comcast/codex/blacklist"
 	"testing"
 	"time"
+
+	"github.com/Comcast/codex/blacklist"
 
 	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
@@ -118,7 +119,7 @@ func TestCreateRetryInsertService(t *testing.T) {
 	}
 	assert := assert.New(t)
 	p := xmetricstest.NewProvider(nil, Metrics)
-	newService := CreateRetryInsertService(r.inserter, r.config.retries, r.config.interval, p)
+	newService := CreateRetryInsertService(r.inserter, WithRetries(r.config.retries), WithInterval(r.config.interval), WithMeasures(p))
 	assert.Equal(r.inserter, newService.inserter)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
@@ -215,7 +216,7 @@ func TestCreateRetryUpdateService(t *testing.T) {
 	}
 	assert := assert.New(t)
 	p := xmetricstest.NewProvider(nil, Metrics)
-	newService := CreateRetryUpdateService(r.pruner, r.config.retries, r.config.interval, p)
+	newService := CreateRetryUpdateService(r.pruner, WithRetries(r.config.retries), WithInterval(r.config.interval), WithMeasures(p))
 	assert.Equal(r.pruner, newService.pruner)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
@@ -474,7 +475,7 @@ func TestCreateRetryRGService(t *testing.T) {
 	}
 	assert := assert.New(t)
 	p := xmetricstest.NewProvider(nil, Metrics)
-	newService := CreateRetryRGService(r.rg, r.config.retries, r.config.interval, p)
+	newService := CreateRetryRGService(r.rg, WithRetries(r.config.retries), WithInterval(r.config.interval), WithMeasures(p))
 	assert.Equal(r.rg, newService.rg)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)

@@ -25,11 +25,56 @@ import (
 	"github.com/go-kit/kit/metrics/provider"
 )
 
+const (
+	defaultInterval = time.Second
+	defaultRetries  = 1
+)
+
+var (
+	defaultSleep = time.Sleep
+)
+
 type retryConfig struct {
 	retries  int
 	interval time.Duration
 	sleep    func(time.Duration)
 	measures Measures
+}
+
+type Option func(r *retryConfig)
+
+func WithRetries(retries int) Option {
+	return func(r *retryConfig) {
+		// only set retries if the value is valid
+		if retries >= 0 {
+			r.retries = retries
+		}
+	}
+}
+
+func WithInterval(interval time.Duration) Option {
+	return func(r *retryConfig) {
+		// only set interval if the value is valid
+		if interval > time.Duration(0)*time.Second {
+			r.interval = interval
+		}
+	}
+}
+
+func WithSleep(sleep func(time.Duration)) Option {
+	return func(r *retryConfig) {
+		if sleep != nil {
+			r.sleep = sleep
+		}
+	}
+}
+
+func WithMeasures(p provider.Provider) Option {
+	return func(r *retryConfig) {
+		if p != nil {
+			r.measures = NewMeasures(p)
+		}
+	}
 }
 
 type Inserter interface {
@@ -62,16 +107,19 @@ func (ri RetryInsertService) InsertRecords(records ...Record) error {
 	return err
 }
 
-func CreateRetryInsertService(inserter Inserter, retries int, interval time.Duration, provider provider.Provider) RetryInsertService {
-	return RetryInsertService{
+func CreateRetryInsertService(inserter Inserter, options ...Option) RetryInsertService {
+	ris := RetryInsertService{
 		inserter: inserter,
 		config: retryConfig{
-			retries:  retries,
-			interval: interval,
-			sleep:    time.Sleep,
-			measures: NewMeasures(provider),
+			retries:  defaultRetries,
+			interval: defaultInterval,
+			sleep:    defaultSleep,
 		},
 	}
+	for _, o := range options {
+		o(&ris.config)
+	}
+	return ris
 }
 
 type Pruner interface {
@@ -104,16 +152,19 @@ func (ru RetryUpdateService) PruneRecords(t int64) error {
 	return err
 }
 
-func CreateRetryUpdateService(pruner Pruner, retries int, interval time.Duration, provider provider.Provider) RetryUpdateService {
-	return RetryUpdateService{
+func CreateRetryUpdateService(pruner Pruner, options ...Option) RetryUpdateService {
+	rus := RetryUpdateService{
 		pruner: pruner,
 		config: retryConfig{
-			retries:  retries,
-			interval: interval,
-			sleep:    time.Sleep,
-			measures: NewMeasures(provider),
+			retries:  defaultRetries,
+			interval: defaultInterval,
+			sleep:    defaultSleep,
 		},
 	}
+	for _, o := range options {
+		o(&rus.config)
+	}
+	return rus
 }
 
 type RetryListGService struct {
@@ -140,16 +191,19 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 	return
 }
 
-func CreateRetryListGService(listGetter blacklist.Updater, retries int, interval time.Duration, provider provider.Provider) RetryListGService {
-	return RetryListGService{
+func CreateRetryListGService(listGetter blacklist.Updater, options ...Option) RetryListGService {
+	rlgs := RetryListGService{
 		lg: listGetter,
 		config: retryConfig{
-			retries:  retries,
-			interval: interval,
-			sleep:    time.Sleep,
-			measures: NewMeasures(provider),
+			retries:  defaultRetries,
+			interval: defaultInterval,
+			sleep:    defaultSleep,
 		},
 	}
+	for _, o := range options {
+		o(&rlgs.config)
+	}
+	return rlgs
 }
 
 type RecordGetter interface {
@@ -210,14 +264,17 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 	return record, err
 }
 
-func CreateRetryRGService(recordGetter RecordGetter, retries int, interval time.Duration, provider provider.Provider) RetryRGService {
-	return RetryRGService{
+func CreateRetryRGService(recordGetter RecordGetter, options ...Option) RetryRGService {
+	rrgs := RetryRGService{
 		rg: recordGetter,
 		config: retryConfig{
-			retries:  retries,
-			interval: interval,
-			sleep:    time.Sleep,
-			measures: NewMeasures(provider),
+			retries:  defaultRetries,
+			interval: defaultInterval,
+			sleep:    defaultSleep,
 		},
 	}
+	for _, o := range options {
+		o(&rrgs.config)
+	}
+	return rrgs
 }
