@@ -314,7 +314,7 @@ func (db *Connection) InsertRecords(records ...Record) error {
 	err := db.mutliInsert.insert(records)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, insertType).Add(1.0)
-		return emperror.WrapWith(err, "Inserting records failed", "records", records)
+		return emperror.Wrap(err, "Inserting records failed")
 	}
 	db.measures.SQLQuerySuccessCount.With(typeLabel, insertType).Add(1.0)
 	return nil
