@@ -264,11 +264,11 @@ func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 		deviceInfo []Record
 	)
 	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ?", deviceID)
-	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
@@ -279,11 +279,11 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType Eve
 		deviceInfo []Record
 	)
 	err := db.finder.findRecords(&deviceInfo, limit, "device_id = ? AND type = ?", deviceID, eventType)
-	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
