@@ -40,9 +40,9 @@ type mockMultiInsert struct {
 	mock.Mock
 }
 
-func (c *mockMultiInsert) insert(records []Record) error {
+func (c *mockMultiInsert) insert(records []Record) (int64, error) {
 	args := c.Called(records)
-	return args.Error(0)
+	return int64(args.Int(0)), args.Error(1)
 }
 
 type mockDeleter struct {
