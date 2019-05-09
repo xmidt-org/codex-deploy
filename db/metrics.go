@@ -44,6 +44,7 @@ const (
 	SQLQuerySuccessCounter      = "sql_query_success_count"
 	SQLQueryFailureCounter      = "sql_query_failure_count"
 	SQLQueryRetryCounter        = "sql_query_retry_count"
+	SQLQueryEndCounter          = "sql_query_end_counter"
 	SQLInsertedRecordsCounter   = "sql_inserted_rows_count"
 	SQLReadRecordsCounter       = "sql_read_rows_count"
 	SQLDeletedRecordsCounter    = "sql_deleted_rows_count"
@@ -112,6 +113,12 @@ func Metrics() []xmetrics.Metric {
 			LabelNames: []string{typeLabel},
 		},
 		{
+			Name:       SQLQueryEndCounter,
+			Type:       "counter",
+			Help:       "the total number of SQL queries that are done, no more retrying",
+			LabelNames: []string{typeLabel},
+		},
+		{
 			Name: SQLInsertedRecordsCounter,
 			Type: "counter",
 			Help: "The total number of rows inserted",
@@ -142,6 +149,7 @@ type Measures struct {
 	SQLQuerySuccessCount metrics.Counter
 	SQLQueryFailureCount metrics.Counter
 	SQLQueryRetryCount   metrics.Counter
+	SQLQueryEndCount     metrics.Counter
 	SQLInsertedRecords   metrics.Counter
 	SQLReadRecords       metrics.Counter
 	SQLDeletedRecords    metrics.Counter
@@ -161,6 +169,7 @@ func NewMeasures(p provider.Provider) Measures {
 		SQLQuerySuccessCount: p.NewCounter(SQLQuerySuccessCounter),
 		SQLQueryFailureCount: p.NewCounter(SQLQueryFailureCounter),
 		SQLQueryRetryCount:   p.NewCounter(SQLQueryRetryCounter),
+		SQLQueryEndCount:     p.NewCounter(SQLQueryEndCounter),
 		SQLInsertedRecords:   p.NewCounter(SQLInsertedRecordsCounter),
 		SQLReadRecords:       p.NewCounter(SQLReadRecordsCounter),
 		SQLDeletedRecords:    p.NewCounter(SQLDeletedRecordsCounter),

@@ -104,6 +104,7 @@ func (ri RetryInsertService) InsertRecords(records ...Record) error {
 		}
 	}
 
+	ri.config.measures.SQLQueryEndCount.With(typeLabel, insertType).Add(1.0)
 	return err
 }
 
@@ -149,6 +150,7 @@ func (ru RetryUpdateService) PruneRecords(t int64) error {
 		}
 	}
 
+	ru.config.measures.SQLQueryEndCount.With(typeLabel, deleteType).Add(1.0)
 	return err
 }
 
@@ -188,6 +190,7 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 		}
 	}
 
+	ltg.config.measures.SQLQueryEndCount.With(typeLabel, listReadType).Add(1.0)
 	return
 }
 
@@ -237,6 +240,7 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, erro
 		}
 	}
 
+	rtg.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
 	return record, err
 }
 
@@ -261,6 +265,7 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 		}
 	}
 
+	rtg.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
 	return record, err
 }
 
