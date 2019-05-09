@@ -268,6 +268,7 @@ func (db *Connection) GetRecords(deviceID string, limit int) ([]Record, error) {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
@@ -282,6 +283,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType Eve
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []Record{}, emperror.WrapWith(err, "Getting records from database failed", "device id", deviceID)
 	}
+	db.measures.SQLReadRecords.Add(float64(len(deviceInfo)))
 	db.measures.SQLQuerySuccessCount.With(typeLabel, readType).Add(1.0)
 	return deviceInfo, nil
 }
@@ -300,7 +302,7 @@ func (db *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err erro
 // PruneRecords removes records past their deathdate.
 func (db *Connection) PruneRecords(t int64) error {
 	rowsAffected, err := db.deleter.delete(&Record{}, db.pruneLimit, "death_date < ?", t)
-	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
+	db.measures.SQLDeletedRecords.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.WrapWith(err, "Prune records failed", "time", t)
@@ -311,7 +313,8 @@ func (db *Connection) PruneRecords(t int64) error {
 
 // InsertEvent adds a record to the table.
 func (db *Connection) InsertRecords(records ...Record) error {
-	err := db.mutliInsert.insert(records)
+	rowsAffected, err := db.mutliInsert.insert(records)
+	db.measures.SQLInsertedRecords.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, insertType).Add(1.0)
 		return emperror.Wrap(err, "Inserting records failed")
@@ -361,7 +364,7 @@ func doEvery(d time.Duration, f func()) chan struct{} {
 // RemoveAll removes everything in the events table.  Used for testing.
 func (db *Connection) RemoveAll() error {
 	rowsAffected, err := db.deleter.delete(&Record{}, 0)
-	db.measures.SQLDeletedRows.Add(float64(rowsAffected))
+	db.measures.SQLDeletedRecords.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
 		return emperror.Wrap(err, "Removing all records from database failed")

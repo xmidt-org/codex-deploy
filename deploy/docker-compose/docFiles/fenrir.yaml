@@ -11,9 +11,9 @@ log:
   level: "DEBUG"
   json: true
 
-pruneInterval: 10s
-pruneRetries: 0
-retryInterval: 0s
+pruneInterval: 5m
+pruneRetries: 2
+retryInterval: 30s
 db:
   server: "db:26257"
   username: "roachadmin"

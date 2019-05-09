@@ -22,8 +22,9 @@ import (
 
 	"database/sql"
 	"fmt"
-	"github.com/Comcast/codex/blacklist"
 	"strings"
+
+	"github.com/Comcast/codex/blacklist"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -37,7 +38,7 @@ type (
 		findBlacklist(out *[]blacklist.BlackListedItem) error
 	}
 	multiinserter interface {
-		insert(records []Record) error
+		insert(records []Record) (int64, error)
 	}
 	deleter interface {
 		delete(value *Record, limit int, where ...interface{}) (int64, error)
@@ -67,9 +68,9 @@ func (b *dbDecorator) findBlacklist(out *[]blacklist.BlackListedItem) error {
 	return db.Error
 }
 
-func (b *dbDecorator) insert(records []Record) error {
+func (b *dbDecorator) insert(records []Record) (int64, error) {
 	if len(records) == 0 {
-		return errNoEvents
+		return 0, errNoEvents
 	}
 	mainScope := b.DB.NewScope(records[0])
 	mainFields := mainScope.Fields()
@@ -108,10 +109,11 @@ func (b *dbDecorator) insert(records []Record) error {
 		strings.Join(placeholdersArr, ", "),
 	))
 
-	if _, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...); err != nil {
-		return err
+	result, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...)
+	if err != nil {
+		return 0, err
 	}
-	return nil
+	return result.RowsAffected()
 }
 
 func (b *dbDecorator) delete(value *Record, limit int, where ...interface{}) (int64, error) {
