@@ -53,7 +53,6 @@ func TestGetRecords(t *testing.T) {
 			deviceID:    "1234",
 			expectedRecords: []Record{
 				{
-					ID:       1,
 					Type:     0,
 					DeviceID: "1234",
 				},
@@ -121,7 +120,6 @@ func TestGetRecordsOfType(t *testing.T) {
 			eventType:   1,
 			expectedRecords: []Record{
 				{
-					ID:       1,
 					Type:     1,
 					DeviceID: "1234",
 				},
