@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.5.0]
+- Removed primary key id record
+
 ## [v0.4.3]
 - Added some metrics
 
