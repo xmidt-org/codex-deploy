@@ -2,6 +2,8 @@
 
 ## Docker
 
+In order to deploy into Docker, make sure [Docker is installed](https://docs.docker.com/install/).
+
 1. Have the services you want to bring up built (Svalinn, Gungnir, and Fenrir).
 
 2. Set an environment variables relevant for the services you are deploying. If
