@@ -1,4 +1,6 @@
-# Deploying Codex in Docker
+# Deploying Codex
+
+## Docker
 
 1. Have the services you want to bring up built (Svalinn, Gungnir, and Fenrir).
 

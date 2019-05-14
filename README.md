@@ -36,7 +36,7 @@ This repo is a library of packages used for the codex project.  There is no
 installation.  To install each service, go to their respective READMEs.
 
 ## Deploy
-for deploying the project in Docker, refer to the deploy [README](deploy/docker-compose/README.md).
+for deploying the project in Docker, refer to the deploy [README](deploy/README.md).
 
 ## Contributing
 Refer to [CONTRIBUTING.md](CONTRIBUTING.md).
