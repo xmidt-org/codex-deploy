@@ -61,6 +61,7 @@ services:
       - ./cockroach-data/roach1:/cockroach/cockroach-data
       - ./certs:/cockroach/certs
 
+
   db-init:
     image: cockroachdb/cockroach:v2.1.4
     container_name: db-init
@@ -72,6 +73,17 @@ services:
     command: /setup_db.sh
     depends_on:
       - db
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    networks:
+      - back-tier
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docFiles/prometheus.yml:/prometheus-data/prometheus.yml
+    command:  --config.file=/prometheus-data/prometheus.yml
 
 networks:
   back-tier:
