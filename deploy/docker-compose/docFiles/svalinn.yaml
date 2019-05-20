@@ -47,12 +47,12 @@ db:
 regexRules:
   - regex: "device-status/.*/online$"
     storePayload: true
-    ruleTTL: 1s
-    eventType: "state"
+    ruleTTL: 1m
+    eventType: "State"
   - regex: "device-status/.*/offline$"
     storePayload: true
-    ruleTTL: 1s
-    eventType: "state"
+    ruleTTL: 1m
+    eventType: "State"
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 

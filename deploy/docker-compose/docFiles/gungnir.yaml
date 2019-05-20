@@ -23,7 +23,7 @@ health:
   port: ":7001"
   endpoint: "/health"
 
-getLimit: 200
+getLimit: 10
 getRetries: 0
 retryInterval: 0s
 blacklistInterval: 1m
