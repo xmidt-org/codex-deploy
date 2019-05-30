@@ -18,17 +18,30 @@ log:
   json: true
 
 endpoint: "/device-status"
-parseQueueSize: 3000
-insertQueueSize: 3000
-maxParseWorkers: 10000
-maxInsertWorkers: 1000
-maxBatchSize: 30
-maxBatchWaitTime: 10ms
-metadataMaxSize: 1000
-payloadMaxSize: 1000
-insertRetries: 0
-retryInterval: 10s
-defaultTTL: 1h
+requestParser:
+  queueSize: 3000
+  maxWorkers: 10000
+  metadataMaxSize: 1000
+  payloadMaxSize: 1000
+  defaultTTL: 1h
+  regexRules:
+    - regex: "device-status/.*/online$"
+      storePayload: true
+      ruleTTL: 1m
+      eventType: "State"
+    - regex: "device-status/.*/offline$"
+      storePayload: true
+      ruleTTL: 1m
+      eventType: "State"
+batchInserter:
+  queueSize: 3000
+  maxWorkers: 1000
+  maxBatchSize: 30
+  maxBatchWaitTime: 10ms
+insertRetries:
+  numRetries: 0
+  interval: 1s
+  intervalMult: 5
 blacklistInterval: 1m
 
 health:
@@ -44,20 +57,10 @@ db:
   pingInterval: 1s
   connectTimeout: 1m
   opTimeout: 100ms
-regexRules:
-  - regex: "device-status/.*/online$"
-    storePayload: true
-    ruleTTL: 1m
-    eventType: "State"
-  - regex: "device-status/.*/offline$"
-    storePayload: true
-    ruleTTL: 1m
-    eventType: "State"
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
 webhook:
-  caduceusSecret: "super secret"
   registrationInterval: 4m
   url: "http://host.docker.internal:8181/api/v1/device-status"
   timeout: "1m"
@@ -72,11 +75,5 @@ webhook:
 
 
 cipher:
-  - type: rsa-sym
-    kid: "basic-sha"
-    params:
-      hash: SHA512
-    keys:
-      publicKey: "/etc/svalinn/public.pem"
   - type: none
     kid: none

@@ -8,8 +8,8 @@ import (
 	"github.com/Comcast/codex/db"
 	"github.com/Comcast/webpa-common/logging"
 	"github.com/Comcast/webpa-common/semaphore"
-	"github.com/Comcast/webpa-common/xmetrics"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics/provider"
 	"github.com/goph/emperror"
 )
 
@@ -18,7 +18,7 @@ const (
 	defaultMaxWorkers   = 5
 	minMaxBatchSize     = 0
 	defaultMaxBatchSize = 1
-	minMaxBatchWaitTime = time.Duration(0) * time.Second
+	minMaxBatchWaitTime = time.Duration(1) * time.Millisecond
 	defaultMinQueueSize = 5
 )
 
@@ -43,9 +43,9 @@ type Config struct {
 	QueueSize        int
 }
 
-func NewBatchInserter(config Config, logger log.Logger, metricsRegistry xmetrics.Registry, inserter db.Inserter) (*BatchInserter, error) {
+func NewBatchInserter(config Config, logger log.Logger, metricsRegistry provider.Provider, inserter db.Inserter) (*BatchInserter, error) {
 	if inserter == nil {
-		return nil, errors.New("invalid inserter")
+		return nil, errors.New("no inserter")
 	}
 	if config.MaxWorkers < minMaxWorkers {
 		config.MaxWorkers = defaultMaxWorkers
@@ -96,31 +96,40 @@ func (b *BatchInserter) Stop() {
 
 func (b *BatchInserter) batchRecords() {
 	var (
-		records      []db.Record
-		timeToSubmit time.Time
+		insertRecords bool
+		ticker        *time.Ticker
 	)
 	defer b.wg.Done()
 	for record := range b.insertQueue {
-		// if we don't have any records, then this is our first and started
-		// the timer until submitting
-		if len(records) == 0 {
-			timeToSubmit = time.Now().Add(b.config.MaxBatchWaitTime)
+		if record.Data == nil || len(record.Data) == 0 {
+			continue
 		}
-
+		ticker = time.NewTicker(b.config.MaxBatchWaitTime)
 		if b.measures != nil {
 			b.measures.InsertingQueue.Add(-1.0)
 		}
-		records = append(records, record)
-
-		// if we have filled up the batch or if we are out of time, we insert
-		// what we have
-		if (b.config.MaxBatchSize != 0 && len(records) >= b.config.MaxBatchSize) || time.Now().After(timeToSubmit) {
-			b.insertWorkers.Acquire()
-			go b.insertRecords(records)
-			// don't need to remake an array each time, just remove the values
-			records = records[:0]
+		records := []db.Record{record}
+		for {
+			select {
+			case <-ticker.C:
+				insertRecords = true
+			case r := <-b.insertQueue:
+				if r.Data == nil || len(r.Data) == 0 {
+					continue
+				}
+				records = append(records, r)
+				if b.config.MaxBatchSize != 0 && len(records) >= b.config.MaxBatchSize {
+					insertRecords = true
+				}
+			}
+			if insertRecords {
+				b.insertWorkers.Acquire()
+				go b.insertRecords(records)
+				insertRecords = false
+				break
+			}
 		}
-
+		ticker.Stop()
 	}
 
 	// Grab all the workers to make sure they are done.
