@@ -32,7 +32,7 @@ import (
 func TestRetryInsertRecords(t *testing.T) {
 	initialErr := errors.New("test initial error")
 	failureErr := errors.New("test final error")
-	interval := 8 * time.Second
+	interval := time.Duration(8) * time.Second
 	tests := []struct {
 		description         string
 		numCalls            int
@@ -88,8 +88,9 @@ func TestRetryInsertRecords(t *testing.T) {
 			retryInsertService := RetryInsertService{
 				inserter: mockObj,
 				config: retryConfig{
-					retries:  tc.retries,
-					interval: interval,
+					retries:      tc.retries,
+					interval:     interval,
+					intervalMult: 1,
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
@@ -115,8 +116,9 @@ func TestCreateRetryInsertService(t *testing.T) {
 	r := RetryInsertService{
 		inserter: new(mockInserter),
 		config: retryConfig{
-			retries:  322,
-			interval: 2 * time.Minute,
+			retries:      322,
+			interval:     2 * time.Minute,
+			intervalMult: 1,
 		},
 	}
 	assert := assert.New(t)
@@ -125,6 +127,7 @@ func TestCreateRetryInsertService(t *testing.T) {
 	assert.Equal(r.inserter, newService.inserter)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
+	assert.Equal(r.config.intervalMult, newService.config.intervalMult)
 }
 
 func TestRetryPruneRecords(t *testing.T) {
@@ -186,8 +189,9 @@ func TestRetryPruneRecords(t *testing.T) {
 			retryInsertService := RetryUpdateService{
 				pruner: mockObj,
 				config: retryConfig{
-					retries:  tc.retries,
-					interval: interval,
+					retries:      tc.retries,
+					interval:     interval,
+					intervalMult: 1,
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
@@ -214,16 +218,18 @@ func TestCreateRetryUpdateService(t *testing.T) {
 	r := RetryUpdateService{
 		pruner: new(mockPruner),
 		config: retryConfig{
-			retries:  322,
-			interval: 2 * time.Minute,
+			retries:      322,
+			interval:     2 * time.Minute,
+			intervalMult: 8,
 		},
 	}
 	assert := assert.New(t)
 	p := xmetricstest.NewProvider(nil, Metrics)
-	newService := CreateRetryUpdateService(r.pruner, WithRetries(r.config.retries), WithInterval(r.config.interval), WithMeasures(p))
+	newService := CreateRetryUpdateService(r.pruner, WithRetries(r.config.retries), WithInterval(r.config.interval), WithIntervalMultiplier(8), WithMeasures(p))
 	assert.Equal(r.pruner, newService.pruner)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
+	assert.Equal(r.config.intervalMult, newService.config.intervalMult)
 }
 
 func TestRetryGetBlacklist(t *testing.T) {
@@ -285,8 +291,9 @@ func TestRetryGetBlacklist(t *testing.T) {
 			retryListGService := RetryListGService{
 				lg: mockObj,
 				config: retryConfig{
-					retries:  tc.retries,
-					interval: interval,
+					retries:      tc.retries,
+					interval:     interval,
+					intervalMult: 1,
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
@@ -307,6 +314,24 @@ func TestRetryGetBlacklist(t *testing.T) {
 		})
 	}
 
+}
+
+func TestCreateRetryListGService(t *testing.T) {
+	r := RetryListGService{
+		lg: new(mockLG),
+		config: retryConfig{
+			retries:      322,
+			interval:     2 * time.Minute,
+			intervalMult: 5,
+		},
+	}
+	assert := assert.New(t)
+	p := xmetricstest.NewProvider(nil, Metrics)
+	newService := CreateRetryListGService(r.lg, WithRetries(r.config.retries), WithInterval(r.config.interval), WithIntervalMultiplier(5), WithMeasures(p))
+	assert.Equal(r.lg, newService.lg)
+	assert.Equal(r.config.retries, newService.config.retries)
+	assert.Equal(r.config.interval, newService.config.interval)
+	assert.Equal(r.config.intervalMult, newService.config.intervalMult)
 }
 
 func TestRetryGetRecords(t *testing.T) {
@@ -368,8 +393,9 @@ func TestRetryGetRecords(t *testing.T) {
 			retryRGService := RetryRGService{
 				rg: mockObj,
 				config: retryConfig{
-					retries:  tc.retries,
-					interval: interval,
+					retries:      tc.retries,
+					interval:     interval,
+					intervalMult: 1,
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
@@ -451,8 +477,9 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			retryRGService := RetryRGService{
 				rg: mockObj,
 				config: retryConfig{
-					retries:  tc.retries,
-					interval: interval,
+					retries:      tc.retries,
+					interval:     interval,
+					intervalMult: 1,
 					sleep: func(t time.Duration) {
 						assert.Equal(interval, t)
 					},
@@ -479,14 +506,16 @@ func TestCreateRetryRGService(t *testing.T) {
 	r := RetryRGService{
 		rg: new(mockRG),
 		config: retryConfig{
-			retries:  322,
-			interval: 2 * time.Minute,
+			retries:      322,
+			interval:     2 * time.Minute,
+			intervalMult: 5,
 		},
 	}
 	assert := assert.New(t)
 	p := xmetricstest.NewProvider(nil, Metrics)
-	newService := CreateRetryRGService(r.rg, WithRetries(r.config.retries), WithInterval(r.config.interval), WithMeasures(p))
+	newService := CreateRetryRGService(r.rg, WithRetries(r.config.retries), WithInterval(r.config.interval), WithIntervalMultiplier(5), WithMeasures(p))
 	assert.Equal(r.rg, newService.rg)
 	assert.Equal(r.config.retries, newService.config.retries)
 	assert.Equal(r.config.interval, newService.config.interval)
+	assert.Equal(r.config.intervalMult, newService.config.intervalMult)
 }

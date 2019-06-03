@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	defaultInterval = time.Second
-	defaultRetries  = 1
+	defaultInterval     = time.Second
+	defaultIntervalMult = 1
+	defaultRetries      = 1
 )
 
 var (
@@ -35,10 +36,11 @@ var (
 )
 
 type retryConfig struct {
-	retries  int
-	interval time.Duration
-	sleep    func(time.Duration)
-	measures Measures
+	retries      int
+	interval     time.Duration
+	intervalMult time.Duration
+	sleep        func(time.Duration)
+	measures     Measures
 }
 
 type Option func(r *retryConfig)
@@ -57,6 +59,14 @@ func WithInterval(interval time.Duration) Option {
 		// only set interval if the value is valid
 		if interval > time.Duration(0)*time.Second {
 			r.interval = interval
+		}
+	}
+}
+
+func WithIntervalMultiplier(mult time.Duration) Option {
+	return func(r *retryConfig) {
+		if mult > 1 {
+			r.intervalMult = mult
 		}
 	}
 }
@@ -94,10 +104,12 @@ func (ri RetryInsertService) InsertRecords(records ...Record) error {
 		retries = 0
 	}
 
+	sleepTime := ri.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
 			ri.config.measures.SQLQueryRetryCount.With(typeLabel, insertType).Add(1.0)
-			ri.config.sleep(ri.config.interval)
+			ri.config.sleep(sleepTime)
+			sleepTime = sleepTime * ri.config.intervalMult
 		}
 		if err = ri.inserter.InsertRecords(records...); err == nil {
 			break
@@ -112,9 +124,10 @@ func CreateRetryInsertService(inserter Inserter, options ...Option) RetryInsertS
 	ris := RetryInsertService{
 		inserter: inserter,
 		config: retryConfig{
-			retries:  defaultRetries,
-			interval: defaultInterval,
-			sleep:    defaultSleep,
+			retries:      defaultRetries,
+			interval:     defaultInterval,
+			intervalMult: defaultIntervalMult,
+			sleep:        defaultSleep,
 		},
 	}
 	for _, o := range options {
@@ -140,10 +153,12 @@ func (ru RetryUpdateService) PruneRecords(t int64) error {
 		retries = 0
 	}
 
+	sleepTime := ru.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
 			ru.config.measures.SQLQueryRetryCount.With(typeLabel, deleteType).Add(1.0)
-			ru.config.sleep(ru.config.interval)
+			ru.config.sleep(sleepTime)
+			sleepTime = sleepTime * ru.config.intervalMult
 		}
 		if err = ru.pruner.PruneRecords(t); err == nil {
 			break
@@ -158,9 +173,10 @@ func CreateRetryUpdateService(pruner Pruner, options ...Option) RetryUpdateServi
 	rus := RetryUpdateService{
 		pruner: pruner,
 		config: retryConfig{
-			retries:  defaultRetries,
-			interval: defaultInterval,
-			sleep:    defaultSleep,
+			retries:      defaultRetries,
+			interval:     defaultInterval,
+			intervalMult: defaultIntervalMult,
+			sleep:        defaultSleep,
 		},
 	}
 	for _, o := range options {
@@ -180,10 +196,12 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 		retries = 0
 	}
 
+	sleepTime := ltg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
 			ltg.config.measures.SQLQueryRetryCount.With(typeLabel, listReadType).Add(1.0)
-			ltg.config.sleep(ltg.config.interval)
+			ltg.config.sleep(sleepTime)
+			sleepTime = sleepTime * ltg.config.intervalMult
 		}
 		if list, err = ltg.lg.GetBlacklist(); err == nil {
 			break
@@ -198,9 +216,10 @@ func CreateRetryListGService(listGetter blacklist.Updater, options ...Option) Re
 	rlgs := RetryListGService{
 		lg: listGetter,
 		config: retryConfig{
-			retries:  defaultRetries,
-			interval: defaultInterval,
-			sleep:    defaultSleep,
+			retries:      defaultRetries,
+			interval:     defaultInterval,
+			intervalMult: defaultIntervalMult,
+			sleep:        defaultSleep,
 		},
 	}
 	for _, o := range options {
@@ -230,10 +249,12 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, erro
 		retries = 0
 	}
 
+	sleepTime := rtg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
 			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
-			rtg.config.sleep(rtg.config.interval)
+			rtg.config.sleep(sleepTime)
+			sleepTime = sleepTime * rtg.config.intervalMult
 		}
 		if record, err = rtg.rg.GetRecords(deviceID, limit); err == nil {
 			break
@@ -255,10 +276,12 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 		retries = 0
 	}
 
+	sleepTime := rtg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
 			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
-			rtg.config.sleep(rtg.config.interval)
+			rtg.config.sleep(sleepTime)
+			sleepTime = sleepTime * rtg.config.intervalMult
 		}
 		if record, err = rtg.rg.GetRecordsOfType(deviceID, limit, eventType); err == nil {
 			break
@@ -273,9 +296,10 @@ func CreateRetryRGService(recordGetter RecordGetter, options ...Option) RetryRGS
 	rrgs := RetryRGService{
 		rg: recordGetter,
 		config: retryConfig{
-			retries:  defaultRetries,
-			interval: defaultInterval,
-			sleep:    defaultSleep,
+			retries:      defaultRetries,
+			interval:     defaultInterval,
+			intervalMult: defaultIntervalMult,
+			sleep:        defaultSleep,
 		},
 	}
 	for _, o := range options {
