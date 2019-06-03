@@ -79,10 +79,15 @@ func TestNewBatchInserter(t *testing.T) {
 			assert := assert.New(t)
 			bi, err := NewBatchInserter(tc.config, tc.logger, tc.registry, tc.inserter)
 			if bi != nil {
-				tc.expectedBatchInserter.insertQueue = bi.insertQueue
-				tc.expectedBatchInserter.insertWorkers = bi.insertWorkers
 			}
-			assert.Equal(tc.expectedBatchInserter, bi)
+			if tc.expectedBatchInserter == nil || bi == nil {
+				assert.Equal(tc.expectedBatchInserter, bi)
+			} else {
+				assert.Equal(tc.expectedBatchInserter.inserter, bi.inserter)
+				assert.Equal(tc.expectedBatchInserter.measures, bi.measures)
+				assert.Equal(tc.expectedBatchInserter.config, bi.config)
+				assert.Equal(tc.expectedBatchInserter.logger, bi.logger)
+			}
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -122,6 +127,7 @@ func TestBatchInserter(t *testing.T) {
 		recordsExpected       [][]db.Record
 		waitBtwnRecords       time.Duration
 		expectedDroppedEvents float64
+		expectStopCalled      bool
 	}{
 		{
 			description:     "Success",
@@ -131,6 +137,7 @@ func TestBatchInserter(t *testing.T) {
 				records[:3],
 				records[3:5],
 			},
+			expectStopCalled: true,
 		},
 		{
 			description:     "Nil Record",
@@ -145,10 +152,12 @@ func TestBatchInserter(t *testing.T) {
 			},
 			insertErr:             errors.New("test insert error"),
 			expectedDroppedEvents: 2,
+			expectStopCalled:      true,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
 			inserter := new(mockInserter)
 			for _, r := range tc.recordsExpected {
 				inserter.On("InsertRecords", r).Return(tc.insertErr).Once()
@@ -156,6 +165,11 @@ func TestBatchInserter(t *testing.T) {
 			queue := make(chan db.Record, 5)
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
+			stopCalled := false
+			stop := func() {
+				stopCalled = true
+			}
+			tickerChan := make(chan time.Time, 1)
 			b := BatchInserter{
 				config: Config{
 					MaxBatchWaitTime: 10 * time.Millisecond,
@@ -167,6 +181,9 @@ func TestBatchInserter(t *testing.T) {
 				insertWorkers: semaphore.New(5),
 				measures:      m,
 				logger:        log.NewNopLogger(),
+				ticker: func(d time.Duration) (<-chan time.Time, func()) {
+					return tickerChan, stop
+				},
 			}
 			p.Assert(t, DroppedEventsFromDbFailCounter)(xmetricstest.Value(0))
 			b.wg.Add(1)
@@ -177,8 +194,10 @@ func TestBatchInserter(t *testing.T) {
 				}
 				b.Insert(r)
 			}
+			tickerChan <- time.Now()
 			b.Stop()
 			inserter.AssertExpectations(t)
+			assert.Equal(tc.expectStopCalled, stopCalled)
 			p.Assert(t, DroppedEventsFromDbFailCounter)(xmetricstest.Value(tc.expectedDroppedEvents))
 		})
 	}

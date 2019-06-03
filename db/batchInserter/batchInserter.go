@@ -26,6 +26,15 @@ var (
 	defaultLogger = log.NewNopLogger()
 )
 
+// defaultTicker is the production code that produces a ticker.  Note that we don't
+// want to return *time.Ticker, as we want to be able to inject something for testing.
+// We also need to return a closure to stop the ticker, so that we can call ticker.Stop() without
+// being dependent on the *time.Ticker interface.
+func defaultTicker(d time.Duration) (<-chan time.Time, func()) {
+	ticker := time.NewTicker(d)
+	return ticker.C, ticker.Stop
+}
+
 type BatchInserter struct {
 	insertQueue   chan db.Record
 	inserter      db.Inserter
@@ -34,6 +43,7 @@ type BatchInserter struct {
 	measures      *Measures
 	logger        log.Logger
 	config        Config
+	ticker        func(time.Duration) (<-chan time.Time, func())
 }
 
 type Config struct {
@@ -73,6 +83,7 @@ func NewBatchInserter(config Config, logger log.Logger, metricsRegistry provider
 		insertWorkers: workers,
 		inserter:      inserter,
 		insertQueue:   queue,
+		ticker:        defaultTicker,
 	}
 	return &b, nil
 }
@@ -97,21 +108,22 @@ func (b *BatchInserter) Stop() {
 func (b *BatchInserter) batchRecords() {
 	var (
 		insertRecords bool
-		ticker        *time.Ticker
+		ticker        <-chan time.Time
+		stop          func()
 	)
 	defer b.wg.Done()
 	for record := range b.insertQueue {
 		if record.Data == nil || len(record.Data) == 0 {
 			continue
 		}
-		ticker = time.NewTicker(b.config.MaxBatchWaitTime)
+		ticker, stop = b.ticker(b.config.MaxBatchWaitTime)
 		if b.measures != nil {
 			b.measures.InsertingQueue.Add(-1.0)
 		}
 		records := []db.Record{record}
 		for {
 			select {
-			case <-ticker.C:
+			case <-ticker:
 				insertRecords = true
 			case r := <-b.insertQueue:
 				if r.Data == nil || len(r.Data) == 0 {
@@ -129,7 +141,7 @@ func (b *BatchInserter) batchRecords() {
 				break
 			}
 		}
-		ticker.Stop()
+		stop()
 	}
 
 	// Grab all the workers to make sure they are done.
