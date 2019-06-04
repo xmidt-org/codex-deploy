@@ -137,7 +137,8 @@ func CreateRetryInsertService(inserter Inserter, options ...Option) RetryInsertS
 }
 
 type Pruner interface {
-	PruneRecords(t int64) error
+	GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error)
+	PruneRecords(records []int) error
 }
 
 type RetryUpdateService struct {
@@ -145,7 +146,34 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) PruneRecords(t int64) error {
+func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error) {
+	var (
+		err       error
+		recordIDs []int
+	)
+
+	retries := ru.config.retries
+	if retries < 1 {
+		retries = 0
+	}
+
+	sleepTime := ru.config.interval
+	for i := 0; i < retries+1; i++ {
+		if i > 0 {
+			ru.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			ru.config.sleep(sleepTime)
+			sleepTime = sleepTime * ru.config.intervalMult
+		}
+		if recordIDs, err = ru.pruner.GetRecordIDs(shard, limit, deathDate); err == nil {
+			break
+		}
+	}
+
+	ru.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
+	return recordIDs, err
+}
+
+func (ru RetryUpdateService) PruneRecords(records []int) error {
 	var err error
 
 	retries := ru.config.retries
@@ -160,7 +188,7 @@ func (ru RetryUpdateService) PruneRecords(t int64) error {
 			ru.config.sleep(sleepTime)
 			sleepTime = sleepTime * ru.config.intervalMult
 		}
-		if err = ru.pruner.PruneRecords(t); err == nil {
+		if err = ru.pruner.PruneRecords(records); err == nil {
 			break
 		}
 	}

@@ -15,21 +15,11 @@
  *
  */
 
-package db
+package batchDeleter
 
 import (
-	"github.com/Comcast/codex/blacklist"
 	"github.com/stretchr/testify/mock"
 )
-
-type mockInserter struct {
-	mock.Mock
-}
-
-func (i *mockInserter) InsertRecords(records ...Record) error {
-	args := i.Called(records)
-	return args.Error(0)
-}
 
 type mockPruner struct {
 	mock.Mock
@@ -43,27 +33,4 @@ func (p *mockPruner) GetRecordIDs(shard int, limit int, deathDate int64) ([]int,
 func (p *mockPruner) PruneRecords(records []int) error {
 	args := p.Called(records)
 	return args.Error(0)
-}
-
-type mockRG struct {
-	mock.Mock
-}
-
-func (rg *mockRG) GetRecords(deviceID string, limit int) ([]Record, error) {
-	args := rg.Called(deviceID, limit)
-	return args.Get(0).([]Record), args.Error(1)
-}
-
-func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
-	args := rg.Called(deviceID, limit, eventType)
-	return args.Get(0).([]Record), args.Error(1)
-}
-
-type mockLG struct {
-	mock.Mock
-}
-
-func (rg *mockLG) GetBlacklist() ([]blacklist.BlackListedItem, error) {
-	args := rg.Called()
-	return args.Get(0).([]blacklist.BlackListedItem), args.Error(1)
 }
