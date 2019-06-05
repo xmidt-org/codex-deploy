@@ -15,18 +15,18 @@
  *
  */
 
-package batchInserter
+package batchDeleter
 
 import (
-	"github.com/Comcast/codex/db"
-	"github.com/stretchr/testify/mock"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-type mockInserter struct {
-	mock.Mock
-}
+func TestMetrics(t *testing.T) {
+	assert := assert.New(t)
 
-func (c *mockInserter) InsertRecords(records ...db.Record) error {
-	args := c.Called(records)
-	return args.Error(0)
+	m := Metrics()
+
+	assert.NotNil(m)
 }

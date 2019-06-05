@@ -36,6 +36,15 @@ func (f *mockFinder) findRecords(out *[]Record, limit int, where ...interface{})
 	return args.Error(0)
 }
 
+func (f *mockFinder) findRecordIDs(out *[]int, limit int, where ...interface{}) error {
+	args := f.Called(out, limit, where)
+	err := json.Unmarshal(args.Get(1).([]byte), out)
+	if err != nil {
+		return err
+	}
+	return args.Error(0)
+}
+
 type mockMultiInsert struct {
 	mock.Mock
 }

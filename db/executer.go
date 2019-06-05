@@ -33,6 +33,7 @@ import (
 type (
 	finder interface {
 		findRecords(out *[]Record, limit int, where ...interface{}) error
+		findRecordIDs(out *[]int, limit int, where ...interface{}) error
 	}
 	findList interface {
 		findBlacklist(out *[]blacklist.BlackListedItem) error
@@ -60,6 +61,14 @@ type dbDecorator struct {
 
 func (b *dbDecorator) findRecords(out *[]Record, limit int, where ...interface{}) error {
 	db := b.Order("birth_date desc").Limit(limit).Find(out, where...)
+	return db.Error
+}
+
+func (b *dbDecorator) findRecordIDs(out *[]int, limit int, where ...interface{}) error {
+	var (
+		records *[]Record
+	)
+	db := b.Order("birth_date desc").Limit(limit).Find(records, where...).Pluck("device_id", out)
 	return db.Error
 }
 

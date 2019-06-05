@@ -15,18 +15,35 @@
  *
  */
 
-package batchInserter
+package batchDeleter
 
 import (
-	"github.com/Comcast/codex/db"
-	"github.com/stretchr/testify/mock"
+	"github.com/Comcast/webpa-common/xmetrics"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/provider"
 )
 
-type mockInserter struct {
-	mock.Mock
+const (
+	DeletingQueueDepth = "deleting_queue_depth"
+)
+
+func Metrics() []xmetrics.Metric {
+	return []xmetrics.Metric{
+		{
+			Name: DeletingQueueDepth,
+			Help: "The depth of the delete queue",
+			Type: "gauge",
+		},
+	}
 }
 
-func (c *mockInserter) InsertRecords(records ...db.Record) error {
-	args := c.Called(records)
-	return args.Error(0)
+type Measures struct {
+	DeletingQueue metrics.Gauge
+}
+
+// NewMeasures constructs a Measures given a go-kit metrics Provider
+func NewMeasures(p provider.Provider) *Measures {
+	return &Measures{
+		DeletingQueue: p.NewGauge(DeletingQueueDepth),
+	}
 }
