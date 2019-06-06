@@ -211,9 +211,7 @@ func TestGetRecordIDs(t *testing.T) {
 				finder:   mockObj,
 			}
 			if tc.expectedCalls > 0 {
-				marshaledRecords, err := json.Marshal(tc.expectedRecordIDs)
-				assert.Nil(err)
-				mockObj.On("findRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedErr, marshaledRecords).Times(tc.expectedCalls)
+				mockObj.On("findRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedRecordIDs, tc.expectedErr).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
@@ -265,7 +263,7 @@ func TestPruneRecords(t *testing.T) {
 				measures:   m,
 				pruneLimit: 3,
 			}
-			mockObj.On("delete", mock.Anything, 0, mock.Anything).Return(6, tc.pruneErr).Once()
+			mockObj.On("delete", mock.Anything, mock.Anything, mock.Anything).Return(6, tc.pruneErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLDeletedRecordsCounter)(xmetricstest.Value(0.0))

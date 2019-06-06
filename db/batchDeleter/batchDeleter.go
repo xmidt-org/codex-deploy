@@ -144,6 +144,7 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 				// just in case
 				vals = []int{}
 			}
+			logging.Debug(d.logger).Log(logging.MessageKey(), "got record ids", "record ids", vals)
 			i := 0
 			for i < len(vals) {
 				endVal := i + d.config.MaxBatchSize
