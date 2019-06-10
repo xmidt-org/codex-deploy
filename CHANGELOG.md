@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.6.0]
+- Added documentation
+- Added prometheus to docker-compose
+- Fixed batching on insert
+- Added `BatchDeleter`, which gets a list of record ids that have passed their 
+  deathdate and deletes them in batches.
+
 ## [v0.5.0]
 - Removed primary key id record
 
