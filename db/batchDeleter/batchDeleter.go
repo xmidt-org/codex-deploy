@@ -33,7 +33,7 @@ import (
 const (
 	minMaxWorkers       = 1
 	defaultMaxWorkers   = 5
-	minMaxBatchSize     = 0
+	minMaxBatchSize     = 1
 	defaultMaxBatchSize = 1
 	minQueryWaitTime    = 0
 	minQueueSize        = 5
