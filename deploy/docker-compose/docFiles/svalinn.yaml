@@ -27,11 +27,11 @@ requestParser:
   regexRules:
     - regex: "device-status/.*/online$"
       storePayload: true
-      ruleTTL: 1m
+      ruleTTL: 10s
       eventType: "State"
     - regex: "device-status/.*/offline$"
       storePayload: true
-      ruleTTL: 1m
+      ruleTTL: 10s
       eventType: "State"
 batchInserter:
   queueSize: 3000
@@ -56,7 +56,7 @@ db:
   waitTimeMult: 5
   pingInterval: 1s
   connectTimeout: 1m
-  opTimeout: 100ms
+  opTimeout: 5s
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 

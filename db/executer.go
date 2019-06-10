@@ -33,7 +33,7 @@ import (
 type (
 	finder interface {
 		findRecords(out *[]Record, limit int, where ...interface{}) error
-		findRecordIDs(out *[]int, limit int, where ...interface{}) error
+		findRecordIDs(limit int, shard int, deathDate int64) ([]int, error)
 	}
 	findList interface {
 		findBlacklist(out *[]blacklist.BlackListedItem) error
@@ -64,12 +64,13 @@ func (b *dbDecorator) findRecords(out *[]Record, limit int, where ...interface{}
 	return db.Error
 }
 
-func (b *dbDecorator) findRecordIDs(out *[]int, limit int, where ...interface{}) error {
+func (b *dbDecorator) findRecordIDs(limit int, shard int, deathDate int64) ([]int, error) {
 	var (
-		records *[]Record
+		out []int
 	)
-	db := b.Order("birth_date desc").Limit(limit).Find(records, where...).Pluck("device_id", out)
-	return db.Error
+	db := b.Raw("SELECT record_id from devices.events WHERE shard = ? AND death_date < ? LIMIT ?", shard, deathDate, limit).Pluck("record_id", &out)
+	// db := b.Order("birth_date desc").Limit(limit).Find(&records, where...).Pluck("record_id", out)
+	return out, db.Error
 }
 
 func (b *dbDecorator) findBlacklist(out *[]blacklist.BlackListedItem) error {

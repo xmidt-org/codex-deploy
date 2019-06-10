@@ -99,7 +99,6 @@ type Record struct {
 	Nonce     []byte    `json:"nonce"`
 	Alg       string    `json:"alg"`
 	KID       string    `json:"kid" gorm:"Column:kid"`
-	RecordID  int       `json:"recordid" gorm:"type:int8"`
 }
 
 // set Record's table name to be `events`
@@ -289,10 +288,7 @@ func (db *Connection) GetRecordsOfType(deviceID string, limit int, eventType Eve
 }
 
 func (db *Connection) GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error) {
-	var (
-		ids []int
-	)
-	err := db.finder.findRecordIDs(&ids, limit, "shard = ? AND death_date < ?", shard, deathDate)
+	ids, err := db.finder.findRecordIDs(limit, shard, deathDate)
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, readType).Add(1.0)
 		return []int{}, emperror.WrapWith(err, "Getting record IDs from database failed", "shard", shard, "death date", deathDate)
@@ -315,7 +311,7 @@ func (db *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err erro
 
 // PruneRecords removes records past their deathdate.
 func (db *Connection) PruneRecords(records []int) error {
-	rowsAffected, err := db.deleter.delete(&Record{}, 0, "event_id IN (?)", records)
+	rowsAffected, err := db.deleter.delete(&Record{}, len(records), "record_id IN (?)", records)
 	db.measures.SQLDeletedRecords.Add(float64(rowsAffected))
 	if err != nil {
 		db.measures.SQLQueryFailureCount.With(typeLabel, deleteType).Add(1.0)
