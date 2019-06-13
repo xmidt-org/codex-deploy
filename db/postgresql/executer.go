@@ -15,7 +15,7 @@
  *
  */
 
-package db
+package postgresql
 
 import (
 	// Import GORM-related packages.
@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/Comcast/codex/blacklist"
+	"github.com/Comcast/codex/db"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -32,17 +33,17 @@ import (
 
 type (
 	finder interface {
-		findRecords(out *[]Record, limit int, where ...interface{}) error
+		findRecords(out *[]db.Record, limit int, where ...interface{}) error
 		findRecordIDs(limit int, shard int, deathDate int64) ([]int, error)
 	}
 	findList interface {
 		findBlacklist(out *[]blacklist.BlackListedItem) error
 	}
 	multiinserter interface {
-		insert(records []Record) (int64, error)
+		insert(records []db.Record) (int64, error)
 	}
 	deleter interface {
-		delete(value *Record, limit int, where ...interface{}) (int64, error)
+		delete(value *db.Record, limit int, where ...interface{}) (int64, error)
 	}
 	pinger interface {
 		ping() error
@@ -59,7 +60,7 @@ type dbDecorator struct {
 	*gorm.DB
 }
 
-func (b *dbDecorator) findRecords(out *[]Record, limit int, where ...interface{}) error {
+func (b *dbDecorator) findRecords(out *[]db.Record, limit int, where ...interface{}) error {
 	db := b.Order("birth_date desc").Limit(limit).Find(out, where...)
 	return db.Error
 }
@@ -78,7 +79,7 @@ func (b *dbDecorator) findBlacklist(out *[]blacklist.BlackListedItem) error {
 	return db.Error
 }
 
-func (b *dbDecorator) insert(records []Record) (int64, error) {
+func (b *dbDecorator) insert(records []db.Record) (int64, error) {
 	if len(records) == 0 {
 		return 0, errNoEvents
 	}
@@ -126,7 +127,7 @@ func (b *dbDecorator) insert(records []Record) (int64, error) {
 	return result.RowsAffected()
 }
 
-func (b *dbDecorator) delete(value *Record, limit int, where ...interface{}) (int64, error) {
+func (b *dbDecorator) delete(value *db.Record, limit int, where ...interface{}) (int64, error) {
 	var db *gorm.DB
 	if limit > 0 {
 		db = b.Limit(limit).Delete(value, where...)

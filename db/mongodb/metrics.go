@@ -15,21 +15,13 @@
  *
  */
 
-package db
+package mongodb
 
 import (
+	"github.com/Comcast/codex/db"
 	"github.com/Comcast/webpa-common/xmetrics"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/provider"
-)
-
-const (
-	typeLabel    = "type"
-	insertType   = "insert"
-	deleteType   = "delete"
-	readType     = "read"
-	pingType     = "ping"
-	listReadType = "listRead"
 )
 
 const (
@@ -43,8 +35,6 @@ const (
 	SQLMaxLifetimeClosedCounter = "sql_max_lifetime_closed"
 	SQLQuerySuccessCounter      = "sql_query_success_count"
 	SQLQueryFailureCounter      = "sql_query_failure_count"
-	SQLQueryRetryCounter        = "sql_query_retry_count"
-	SQLQueryEndCounter          = "sql_query_end_counter"
 	SQLInsertedRecordsCounter   = "sql_inserted_rows_count"
 	SQLReadRecordsCounter       = "sql_read_rows_count"
 	SQLDeletedRecordsCounter    = "sql_deleted_rows_count"
@@ -98,25 +88,13 @@ func Metrics() []xmetrics.Metric {
 			Name:       SQLQuerySuccessCounter,
 			Type:       "counter",
 			Help:       "The total number of successful SQL queries",
-			LabelNames: []string{typeLabel},
+			LabelNames: []string{db.TypeLabel},
 		},
 		{
 			Name:       SQLQueryFailureCounter,
 			Type:       "counter",
 			Help:       "The total number of failed SQL queries",
-			LabelNames: []string{typeLabel},
-		},
-		{
-			Name:       SQLQueryRetryCounter,
-			Type:       "counter",
-			Help:       "The total number of SQL queries retried",
-			LabelNames: []string{typeLabel},
-		},
-		{
-			Name:       SQLQueryEndCounter,
-			Type:       "counter",
-			Help:       "the total number of SQL queries that are done, no more retrying",
-			LabelNames: []string{typeLabel},
+			LabelNames: []string{db.TypeLabel},
 		},
 		{
 			Name: SQLInsertedRecordsCounter,
@@ -148,8 +126,6 @@ type Measures struct {
 	SQLMaxLifetimeClosed metrics.Counter
 	SQLQuerySuccessCount metrics.Counter
 	SQLQueryFailureCount metrics.Counter
-	SQLQueryRetryCount   metrics.Counter
-	SQLQueryEndCount     metrics.Counter
 	SQLInsertedRecords   metrics.Counter
 	SQLReadRecords       metrics.Counter
 	SQLDeletedRecords    metrics.Counter
@@ -168,8 +144,6 @@ func NewMeasures(p provider.Provider) Measures {
 		SQLMaxLifetimeClosed: p.NewCounter(SQLMaxLifetimeClosedCounter),
 		SQLQuerySuccessCount: p.NewCounter(SQLQuerySuccessCounter),
 		SQLQueryFailureCount: p.NewCounter(SQLQueryFailureCounter),
-		SQLQueryRetryCount:   p.NewCounter(SQLQueryRetryCounter),
-		SQLQueryEndCount:     p.NewCounter(SQLQueryEndCounter),
 		SQLInsertedRecords:   p.NewCounter(SQLInsertedRecordsCounter),
 		SQLReadRecords:       p.NewCounter(SQLReadRecordsCounter),
 		SQLDeletedRecords:    p.NewCounter(SQLDeletedRecordsCounter),

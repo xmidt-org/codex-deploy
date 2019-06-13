@@ -15,11 +15,12 @@
  *
  */
 
-package db
+package postgresql
 
 import (
 	"encoding/json"
 
+	"github.com/Comcast/codex/db"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -27,7 +28,7 @@ type mockFinder struct {
 	mock.Mock
 }
 
-func (f *mockFinder) findRecords(out *[]Record, limit int, where ...interface{}) error {
+func (f *mockFinder) findRecords(out *[]db.Record, limit int, where ...interface{}) error {
 	args := f.Called(out, limit, where)
 	err := json.Unmarshal(args.Get(1).([]byte), out)
 	if err != nil {
@@ -45,7 +46,7 @@ type mockMultiInsert struct {
 	mock.Mock
 }
 
-func (c *mockMultiInsert) insert(records []Record) (int64, error) {
+func (c *mockMultiInsert) insert(records []db.Record) (int64, error) {
 	args := c.Called(records)
 	return int64(args.Int(0)), args.Error(1)
 }
@@ -54,7 +55,7 @@ type mockDeleter struct {
 	mock.Mock
 }
 
-func (d *mockDeleter) delete(value *Record, limit int, where ...interface{}) (int64, error) {
+func (d *mockDeleter) delete(value *db.Record, limit int, where ...interface{}) (int64, error) {
 	args := d.Called(value, limit, where)
 	return int64(args.Int(0)), args.Error(1)
 }
