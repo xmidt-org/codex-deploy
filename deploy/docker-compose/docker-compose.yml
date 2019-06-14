@@ -35,44 +35,57 @@ services:
     depends_on:
       - db
 
-  fenrir:
-    image: fenrir:${FENRIR_VERSION}
-    container_name: fenrir
-    restart: on-failure
-    ports:
-      - 7203:7203
-    volumes:
-      - ./docFiles/fenrir.yaml:/etc/fenrir/fenrir.yaml
-    networks:
-      - back-tier
-    depends_on:
-      - db
+  # fenrir:
+  #   image: fenrir:${FENRIR_VERSION}
+  #   container_name: fenrir
+  #   restart: on-failure
+  #   ports:
+  #     - 7203:7203
+  #   volumes:
+  #     - ./docFiles/fenrir.yaml:/etc/fenrir/fenrir.yaml
+  #   networks:
+  #     - back-tier
+  #   depends_on:
+  #     - db
 
   db:
-    image: cockroachdb/cockroach:v2.1.4
+    image: mongo:4.0
     container_name: db
-    command: start --insecure
+    command: --smallfiles
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: root
+    #   MONGO_INITDB_ROOT_PASSWORD: example
     ports:
-      - 26257:26257
-      - 8080:8080
+      - 27017:27017
     networks:
       - back-tier
-    volumes:
-      - ./cockroach-data/roach1:/cockroach/cockroach-data
-      - ./certs:/cockroach/certs
 
 
-  db-init:
-    image: cockroachdb/cockroach:v2.1.4
-    container_name: db-init
-    networks:
-      - back-tier
-    volumes:
-      - ./setup_db.sh:/setup_db.sh
-    entrypoint: "/bin/bash"
-    command: /setup_db.sh
-    depends_on:
-      - db
+  # db:
+  #   image: cockroachdb/cockroach:v2.1.4
+  #   container_name: db
+  #   command: start --insecure
+  #   ports:
+  #     - 26257:26257
+  #     - 8080:8080
+  #   networks:
+  #     - back-tier
+  #   volumes:
+  #     - ./cockroach-data/roach1:/cockroach/cockroach-data
+  #     - ./certs:/cockroach/certs
+
+
+  # db-init:
+  #   image: cockroachdb/cockroach:v2.1.4
+  #   container_name: db-init
+  #   networks:
+  #     - back-tier
+  #   volumes:
+  #     - ./setup_db.sh:/setup_db.sh
+  #   entrypoint: "/bin/bash"
+  #   command: /setup_db.sh
+  #   depends_on:
+  #     - db
 
   prometheus:
     image: prom/prometheus

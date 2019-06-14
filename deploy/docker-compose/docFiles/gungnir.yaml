@@ -8,13 +8,13 @@ pprof:
 metric:
   address: ":7003"
   metricsOptions:
-    namespace: "webpa"
-    subsystem: "tr1d1um"
+    namespace: "codex"
+    subsystem: "gungnir"
   readTimeout: "15s"
   idleTimeout: "15s"
 log:
   file: "stdout"
-  level: "INFO"
+  level: "DEBUG"
   json: true
 
 authHeader: ["YXV0aEhlYWRlcjp0ZXN0"]
@@ -29,10 +29,11 @@ retryInterval: 0s
 blacklistInterval: 1m
 
 db:
-  server: "db:26257"
-  username: "roachadmin"
+  server: "db:27017"
+  # username: "root"
+  # password: "example"
   database: "devices"
-  numRetries: 4
+  numRetries: 1
   waitTimeMult: 5
   pingInterval: 1s
   connectTimeout: 1m

@@ -8,8 +8,8 @@ pprof:
 metric:
   address: ":7103"
   metricsOptions:
-    namespace: "webpa"
-    subsystem: "tr1d1um"
+    namespace: "codex"
+    subsystem: "svalinn"
   readTimeout: "15s"
   idleTimeout: "15s"
 log:
@@ -49,10 +49,11 @@ health:
   endpoint: "/health"
 
 db:
-  server: "db:26257"
-  username: "roachadmin"
+  server: "db:27017"
+  # username: "root"
+  # password: "example"
   database: "devices"
-  numRetries: 4
+  numRetries: 1
   waitTimeMult: 5
   pingInterval: 1s
   connectTimeout: 1m
