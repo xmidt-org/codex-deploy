@@ -15,10 +15,11 @@
  *
  */
 
-package db
+package dbretry
 
 import (
 	"github.com/Comcast/codex/blacklist"
+	"github.com/Comcast/codex/db"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -26,7 +27,7 @@ type mockInserter struct {
 	mock.Mock
 }
 
-func (i *mockInserter) InsertRecords(records ...Record) error {
+func (i *mockInserter) InsertRecords(records ...db.Record) error {
 	args := i.Called(records)
 	return args.Error(0)
 }
@@ -49,14 +50,14 @@ type mockRG struct {
 	mock.Mock
 }
 
-func (rg *mockRG) GetRecords(deviceID string, limit int) ([]Record, error) {
+func (rg *mockRG) GetRecords(deviceID string, limit int) ([]db.Record, error) {
 	args := rg.Called(deviceID, limit)
-	return args.Get(0).([]Record), args.Error(1)
+	return args.Get(0).([]db.Record), args.Error(1)
 }
 
-func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
+func (rg *mockRG) GetRecordsOfType(deviceID string, limit int, eventType db.EventType) ([]db.Record, error) {
 	args := rg.Called(deviceID, limit, eventType)
-	return args.Get(0).([]Record), args.Error(1)
+	return args.Get(0).([]db.Record), args.Error(1)
 }
 
 type mockLG struct {

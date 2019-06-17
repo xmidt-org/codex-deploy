@@ -15,12 +15,13 @@
  *
  */
 
-package db
+package dbretry
 
 import (
 	"time"
 
 	"github.com/Comcast/codex/blacklist"
+	"github.com/Comcast/codex/db"
 
 	"github.com/go-kit/kit/metrics/provider"
 )
@@ -87,16 +88,12 @@ func WithMeasures(p provider.Provider) Option {
 	}
 }
 
-type Inserter interface {
-	InsertRecords(records ...Record) error
-}
-
 type RetryInsertService struct {
-	inserter Inserter
+	inserter db.Inserter
 	config   retryConfig
 }
 
-func (ri RetryInsertService) InsertRecords(records ...Record) error {
+func (ri RetryInsertService) InsertRecords(records ...db.Record) error {
 	var err error
 
 	retries := ri.config.retries
@@ -107,7 +104,7 @@ func (ri RetryInsertService) InsertRecords(records ...Record) error {
 	sleepTime := ri.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ri.config.measures.SQLQueryRetryCount.With(typeLabel, insertType).Add(1.0)
+			ri.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.InsertType).Add(1.0)
 			ri.config.sleep(sleepTime)
 			sleepTime = sleepTime * ri.config.intervalMult
 		}
@@ -116,11 +113,11 @@ func (ri RetryInsertService) InsertRecords(records ...Record) error {
 		}
 	}
 
-	ri.config.measures.SQLQueryEndCount.With(typeLabel, insertType).Add(1.0)
+	ri.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.InsertType).Add(1.0)
 	return err
 }
 
-func CreateRetryInsertService(inserter Inserter, options ...Option) RetryInsertService {
+func CreateRetryInsertService(inserter db.Inserter, options ...Option) RetryInsertService {
 	ris := RetryInsertService{
 		inserter: inserter,
 		config: retryConfig{
@@ -136,13 +133,8 @@ func CreateRetryInsertService(inserter Inserter, options ...Option) RetryInsertS
 	return ris
 }
 
-type Pruner interface {
-	GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error)
-	PruneRecords(records []int) error
-}
-
 type RetryUpdateService struct {
-	pruner Pruner
+	pruner db.Pruner
 	config retryConfig
 }
 
@@ -160,7 +152,7 @@ func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64)
 	sleepTime := ru.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ru.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			ru.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 			ru.config.sleep(sleepTime)
 			sleepTime = sleepTime * ru.config.intervalMult
 		}
@@ -169,7 +161,7 @@ func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64)
 		}
 	}
 
-	ru.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
+	ru.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 	return recordIDs, err
 }
 
@@ -184,7 +176,7 @@ func (ru RetryUpdateService) PruneRecords(records []int) error {
 	sleepTime := ru.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ru.config.measures.SQLQueryRetryCount.With(typeLabel, deleteType).Add(1.0)
+			ru.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.DeleteType).Add(1.0)
 			ru.config.sleep(sleepTime)
 			sleepTime = sleepTime * ru.config.intervalMult
 		}
@@ -193,11 +185,11 @@ func (ru RetryUpdateService) PruneRecords(records []int) error {
 		}
 	}
 
-	ru.config.measures.SQLQueryEndCount.With(typeLabel, deleteType).Add(1.0)
+	ru.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.DeleteType).Add(1.0)
 	return err
 }
 
-func CreateRetryUpdateService(pruner Pruner, options ...Option) RetryUpdateService {
+func CreateRetryUpdateService(pruner db.Pruner, options ...Option) RetryUpdateService {
 	rus := RetryUpdateService{
 		pruner: pruner,
 		config: retryConfig{
@@ -227,7 +219,7 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 	sleepTime := ltg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ltg.config.measures.SQLQueryRetryCount.With(typeLabel, listReadType).Add(1.0)
+			ltg.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
 			ltg.config.sleep(sleepTime)
 			sleepTime = sleepTime * ltg.config.intervalMult
 		}
@@ -236,7 +228,7 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 		}
 	}
 
-	ltg.config.measures.SQLQueryEndCount.With(typeLabel, listReadType).Add(1.0)
+	ltg.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
 	return
 }
 
@@ -256,20 +248,15 @@ func CreateRetryListGService(listGetter blacklist.Updater, options ...Option) Re
 	return rlgs
 }
 
-type RecordGetter interface {
-	GetRecords(deviceID string, limit int) ([]Record, error)
-	GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error)
-}
-
 type RetryRGService struct {
-	rg     RecordGetter
+	rg     db.RecordGetter
 	config retryConfig
 }
 
-func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, error) {
+func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]db.Record, error) {
 	var (
 		err    error
-		record []Record
+		record []db.Record
 	)
 
 	retries := rtg.config.retries
@@ -280,7 +267,7 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, erro
 	sleepTime := rtg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			rtg.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 			rtg.config.sleep(sleepTime)
 			sleepTime = sleepTime * rtg.config.intervalMult
 		}
@@ -289,14 +276,14 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]Record, erro
 		}
 	}
 
-	rtg.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
+	rtg.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 	return record, err
 }
 
-func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType EventType) ([]Record, error) {
+func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType db.EventType) ([]db.Record, error) {
 	var (
 		err    error
-		record []Record
+		record []db.Record
 	)
 
 	retries := rtg.config.retries
@@ -307,7 +294,7 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 	sleepTime := rtg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			rtg.config.measures.SQLQueryRetryCount.With(typeLabel, readType).Add(1.0)
+			rtg.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 			rtg.config.sleep(sleepTime)
 			sleepTime = sleepTime * rtg.config.intervalMult
 		}
@@ -316,11 +303,11 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 		}
 	}
 
-	rtg.config.measures.SQLQueryEndCount.With(typeLabel, readType).Add(1.0)
+	rtg.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.ReadType).Add(1.0)
 	return record, err
 }
 
-func CreateRetryRGService(recordGetter RecordGetter, options ...Option) RetryRGService {
+func CreateRetryRGService(recordGetter db.RecordGetter, options ...Option) RetryRGService {
 	rrgs := RetryRGService{
 		rg: recordGetter,
 		config: retryConfig{

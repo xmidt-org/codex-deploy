@@ -2,8 +2,8 @@
 metric:
   address: ":7203"
   metricsOptions:
-    namespace: "webpa"
-    subsystem: "tr1d1um"
+    namespace: "codex"
+    subsystem: "fenrir"
   readTimeout: "15s"
   idleTimeout: "15s"
 log:
