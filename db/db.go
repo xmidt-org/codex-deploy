@@ -20,6 +20,11 @@ type Record struct {
 	KID       string    `json:"kid" bson:"kid" gorm:"Column:kid"`
 }
 
+type RecordToDelete struct {
+	DeathDate int64 `json:"deathdate" bson:"deathdate"`
+	RecordID  int64 `json:"recordid" bson:"recordid"`
+}
+
 // set Record's table name to be `events`
 func (Record) TableName() string {
 	return "events"
@@ -30,8 +35,9 @@ type Inserter interface {
 }
 
 type Pruner interface {
-	GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error)
-	PruneRecords(records []int) error
+	GetRecordsToDelete(shard int, limit int, deathDate int64) ([]RecordToDelete, error)
+	// PruneRecords(records []int) error
+	DeleteRecord(shard int, deathdate int64, recordID int64) error
 }
 
 type RecordGetter interface {

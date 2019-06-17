@@ -122,10 +122,10 @@ func TestNewBatchDeleter(t *testing.T) {
 
 func TestGetRecordsToDeleteSuccess(t *testing.T) {
 	assert := assert.New(t)
-	vals := []int{1, 2, 3, 4, 5}
+	vals := []db.RecordToDelete{{DeathDate: 1, RecordID: 2}, {DeathDate: 3, RecordID: 4}}
 	pruner := new(mockPruner)
-	pruner.On("GetRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return(vals, nil).Once()
-	queue := make(chan []int, 2)
+	pruner.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return(vals, nil).Once()
+	queue := make(chan db.RecordToDelete, 2)
 	tickerChan := make(chan time.Time, 1)
 	stopChan := make(chan struct{}, 1)
 	p := xmetricstest.NewProvider(nil, Metrics)
@@ -164,8 +164,8 @@ func TestGetRecordsToDeleteSuccess(t *testing.T) {
 func TestGetRecordsToDeleteError(t *testing.T) {
 	assert := assert.New(t)
 	pruner := new(mockPruner)
-	pruner.On("GetRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return([]int{}, errors.New("test error")).Once()
-	queue := make(chan []int, 2)
+	pruner.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return([]db.RecordToDelete{}, errors.New("test error")).Once()
+	queue := make(chan db.RecordToDelete, 2)
 	tickerChan := make(chan time.Time, 1)
 	stopChan := make(chan struct{}, 1)
 	p := xmetricstest.NewProvider(nil, Metrics)
@@ -203,10 +203,10 @@ func TestGetRecordsToDeleteError(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	assert := assert.New(t)
-	vals := []int{4, 2}
+	vals := db.RecordToDelete{DeathDate: 111, RecordID: 88888}
 	pruner := new(mockPruner)
-	pruner.On("PruneRecords", vals).Return(nil).Once()
-	queue := make(chan []int, 2)
+	pruner.On("DeleteRecord", 0, vals.DeathDate, vals.RecordID).Return(nil).Once()
+	queue := make(chan db.RecordToDelete, 2)
 	p := xmetricstest.NewProvider(nil, Metrics)
 	measures := NewMeasures(p)
 

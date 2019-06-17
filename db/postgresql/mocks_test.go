@@ -37,9 +37,9 @@ func (f *mockFinder) findRecords(out *[]db.Record, limit int, where ...interface
 	return args.Error(0)
 }
 
-func (f *mockFinder) findRecordIDs(limit int, shard int, deathDate int64) ([]int, error) {
+func (f *mockFinder) findRecordsToDelete(limit int, shard int, deathDate int64) ([]db.RecordToDelete, error) {
 	args := f.Called(limit, shard, deathDate)
-	return args.Get(0).([]int), args.Error(1)
+	return args.Get(0).([]db.RecordToDelete), args.Error(1)
 }
 
 type mockMultiInsert struct {

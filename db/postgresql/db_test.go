@@ -177,7 +177,7 @@ func TestGetRecordIDs(t *testing.T) {
 	tests := []struct {
 		description           string
 		deviceID              string
-		expectedRecordIDs     []int
+		expectedRecords       []db.RecordToDelete
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
 		expectedErr           error
@@ -186,7 +186,7 @@ func TestGetRecordIDs(t *testing.T) {
 		{
 			description:           "Success",
 			deviceID:              "1234",
-			expectedRecordIDs:     []int{12345},
+			expectedRecords:       []db.RecordToDelete{{DeathDate: 222, RecordID: 12345}},
 			expectedSuccessMetric: 1.0,
 			expectedErr:           nil,
 			expectedCalls:         1,
@@ -194,7 +194,7 @@ func TestGetRecordIDs(t *testing.T) {
 		{
 			description:           "Get Error",
 			deviceID:              "1234",
-			expectedRecordIDs:     []int{},
+			expectedRecords:       []db.RecordToDelete{},
 			expectedFailureMetric: 1.0,
 			expectedErr:           errors.New("test Get error"),
 			expectedCalls:         1,
@@ -212,12 +212,12 @@ func TestGetRecordIDs(t *testing.T) {
 				finder:   mockObj,
 			}
 			if tc.expectedCalls > 0 {
-				mockObj.On("findRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedRecordIDs, tc.expectedErr).Times(tc.expectedCalls)
+				mockObj.On("findRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedRecords, tc.expectedErr).Times(tc.expectedCalls)
 			}
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 
-			records, err := dbConnection.GetRecordIDs(0, 0, time.Now().Unix())
+			records, err := dbConnection.GetRecordsToDelete(0, 0, time.Now().Unix())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
@@ -226,7 +226,7 @@ func TestGetRecordIDs(t *testing.T) {
 			} else {
 				assert.Contains(err.Error(), tc.expectedErr.Error())
 			}
-			assert.Equal(tc.expectedRecordIDs, records)
+			assert.Equal(tc.expectedRecords, records)
 		})
 	}
 }
@@ -269,7 +269,7 @@ func TestPruneRecords(t *testing.T) {
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLDeletedRecordsCounter)(xmetricstest.Value(0.0))
 
-			err := dbConnection.PruneRecords([]int{3, 5})
+			err := dbConnection.DeleteRecord(0, 0, 0)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedFailureMetric))
@@ -480,9 +480,9 @@ func TestImplementsInterfaces(t *testing.T) {
 	assert := assert.New(t)
 	dbConn = &Connection{}
 	_, ok := dbConn.(db.Inserter)
-	assert.True(ok)
+	assert.True(ok, "not an inserter")
 	_, ok = dbConn.(db.Pruner)
-	assert.True(ok)
+	assert.True(ok, "not a pruner")
 	_, ok = dbConn.(db.RecordGetter)
-	assert.True(ok)
+	assert.True(ok, "not an record getter")
 }

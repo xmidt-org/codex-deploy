@@ -36,13 +36,13 @@ type mockPruner struct {
 	mock.Mock
 }
 
-func (p *mockPruner) GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error) {
+func (p *mockPruner) GetRecordsToDelete(shard int, limit int, deathDate int64) ([]db.RecordToDelete, error) {
 	args := p.Called(shard, limit, deathDate)
-	return args.Get(0).([]int), args.Error(1)
+	return args.Get(0).([]db.RecordToDelete), args.Error(1)
 }
 
-func (p *mockPruner) PruneRecords(records []int) error {
-	args := p.Called(records)
+func (p *mockPruner) DeleteRecord(shard int, deathdate int64, recordID int64) error {
+	args := p.Called(shard, deathdate, recordID)
 	return args.Error(0)
 }
 

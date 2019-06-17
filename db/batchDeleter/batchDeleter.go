@@ -61,7 +61,7 @@ type Config struct {
 
 type BatchDeleter struct {
 	pruner        db.Pruner
-	deleteQueue   chan []int
+	deleteQueue   chan db.RecordToDelete
 	deleteWorkers semaphore.Interface
 	wg            sync.WaitGroup
 	measures      *Measures
@@ -100,7 +100,7 @@ func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.
 
 	measures := NewMeasures(metricsRegistry)
 	workers := semaphore.New(config.MaxWorkers)
-	queue := make(chan []int, config.QueueSize)
+	queue := make(chan db.RecordToDelete, config.QueueSize)
 	stop := make(chan struct{}, 1)
 
 	return &BatchDeleter{
@@ -137,25 +137,32 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 			close(d.deleteQueue)
 			return
 		case <-ticker:
-			vals, err := d.pruner.GetRecordIDs(d.config.Shard, d.config.GetLimit, time.Now().Unix())
+			vals, err := d.pruner.GetRecordsToDelete(d.config.Shard, d.config.GetLimit, time.Now().Unix())
 			if err != nil {
 				logging.Error(d.logger, emperror.Context(err)...).Log(logging.MessageKey(),
 					"Failed to get record IDs from the database", logging.ErrorKey(), err.Error())
 				// just in case
-				vals = []int{}
+				// vals = []int{}
 			}
-			logging.Debug(d.logger).Log(logging.MessageKey(), "got record ids", "record ids", vals)
-			i := 0
-			for i < len(vals) {
-				endVal := i + d.config.MaxBatchSize
-				if endVal > len(vals) {
-					endVal = len(vals)
-				}
-				d.deleteQueue <- vals[i:endVal]
+			logging.Debug(d.logger).Log(logging.MessageKey(), "got records", "records", vals)
+			// i := 0
+			// for i < len(vals) {
+			// 	endVal := i + d.config.MaxBatchSize
+			// 	if endVal > len(vals) {
+			// 		endVal = len(vals)
+			// 	}
+			// 	d.deleteQueue <- vals[i:endVal]
+			// 	if d.measures != nil {
+			// 		d.measures.DeletingQueue.Add(1.0)
+			// 	}
+			// 	i = endVal
+			// }
+
+			for _, i := range vals {
+				d.deleteQueue <- i
 				if d.measures != nil {
 					d.measures.DeletingQueue.Add(1.0)
 				}
-				i = endVal
 			}
 		}
 	}
@@ -178,13 +185,13 @@ func (d *BatchDeleter) delete() {
 	}
 }
 
-func (d *BatchDeleter) deleteWorker(records []int) {
+func (d *BatchDeleter) deleteWorker(record db.RecordToDelete) {
 	defer d.deleteWorkers.Release()
-	err := d.pruner.PruneRecords(records)
+	err := d.pruner.DeleteRecord(d.config.Shard, record.DeathDate, record.RecordID)
 	if err != nil {
 		logging.Error(d.logger, emperror.Context(err)...).Log(logging.MessageKey(),
 			"Failed to delete records from the database", logging.ErrorKey(), err.Error())
 		return
 	}
-	logging.Info(d.logger).Log(logging.MessageKey(), "Successfully deleted records", "records", records)
+	logging.Debug(d.logger).Log(logging.MessageKey(), "Successfully deleted record", "record id", record.RecordID)
 }
