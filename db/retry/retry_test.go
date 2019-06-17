@@ -15,7 +15,7 @@
  *
  */
 
-package db
+package dbretry
 
 import (
 	"errors"
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Comcast/codex/blacklist"
+	"github.com/Comcast/codex/db"
 
 	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
@@ -99,10 +100,10 @@ func TestRetryInsertRecords(t *testing.T) {
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
-			err := retryInsertService.InsertRecords(Record{})
+			err := retryInsertService.InsertRecords(db.Record{})
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, insertType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.InsertType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.InsertType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -202,8 +203,8 @@ func TestRetryGetRecordIDs(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			_, err := retryUpdateService.GetRecordIDs(0, 0, time.Now().Unix())
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, readType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -286,8 +287,8 @@ func TestRetryPruneRecords(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			err := retryUpdateService.PruneRecords([]int{})
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, deleteType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -388,8 +389,8 @@ func TestRetryGetBlacklist(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			_, err := retryListGService.GetBlacklist()
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, listReadType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, listReadType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ListReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ListReadType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -466,10 +467,10 @@ func TestRetryGetRecords(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]db.Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
+				mockObj.On("GetRecords", mock.Anything, mock.Anything).Return([]db.Record{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -490,8 +491,8 @@ func TestRetryGetRecords(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			_, err := retryRGService.GetRecords("", 5)
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, readType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -550,10 +551,10 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockRG)
 			if tc.numCalls > 1 {
-				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]Record{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]db.Record{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]Record{}, tc.finalError).Once()
+				mockObj.On("GetRecordsOfType", mock.Anything, mock.Anything, mock.Anything).Return([]db.Record{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -574,8 +575,8 @@ func TestRetryGetRecordsOfType(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			_, err := retryRGService.GetRecordsOfType("", 5, 0)
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, typeLabel, readType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {

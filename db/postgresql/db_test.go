@@ -15,7 +15,7 @@
  *
  */
 
-package db
+package postgresql
 
 import (
 	"encoding/json"
@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Comcast/codex/db"
 	"github.com/Comcast/webpa-common/wrp"
 	"github.com/Comcast/webpa-common/xmetrics/xmetricstest"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,7 @@ func TestGetRecords(t *testing.T) {
 	tests := []struct {
 		description           string
 		deviceID              string
-		expectedRecords       []Record
+		expectedRecords       []db.Record
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
 		expectedErr           error
@@ -51,7 +52,7 @@ func TestGetRecords(t *testing.T) {
 		{
 			description: "Success",
 			deviceID:    "1234",
-			expectedRecords: []Record{
+			expectedRecords: []db.Record{
 				{
 					Type:     0,
 					DeviceID: "1234",
@@ -64,7 +65,7 @@ func TestGetRecords(t *testing.T) {
 		{
 			description:           "Get Error",
 			deviceID:              "1234",
-			expectedRecords:       []Record{},
+			expectedRecords:       []db.Record{},
 			expectedFailureMetric: 1.0,
 			expectedErr:           errors.New("test Get error"),
 			expectedCalls:         1,
@@ -91,8 +92,8 @@ func TestGetRecords(t *testing.T) {
 
 			records, err := dbConnection.GetRecords(tc.deviceID, 5)
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -107,8 +108,8 @@ func TestGetRecordsOfType(t *testing.T) {
 	tests := []struct {
 		description           string
 		deviceID              string
-		eventType             EventType
-		expectedRecords       []Record
+		eventType             db.EventType
+		expectedRecords       []db.Record
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
 		expectedErr           error
@@ -118,7 +119,7 @@ func TestGetRecordsOfType(t *testing.T) {
 			description: "Success",
 			deviceID:    "1234",
 			eventType:   1,
-			expectedRecords: []Record{
+			expectedRecords: []db.Record{
 				{
 					Type:     1,
 					DeviceID: "1234",
@@ -131,7 +132,7 @@ func TestGetRecordsOfType(t *testing.T) {
 		{
 			description:           "Get Error",
 			deviceID:              "1234",
-			expectedRecords:       []Record{},
+			expectedRecords:       []db.Record{},
 			expectedFailureMetric: 1.0,
 			expectedErr:           errors.New("test Get error"),
 			expectedCalls:         1,
@@ -159,8 +160,8 @@ func TestGetRecordsOfType(t *testing.T) {
 
 			records, err := dbConnection.GetRecordsOfType(tc.deviceID, 5, tc.eventType)
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
 			p.Assert(t, SQLReadRecordsCounter)(xmetricstest.Value(float64(len(tc.expectedRecords))))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -218,8 +219,8 @@ func TestGetRecordIDs(t *testing.T) {
 
 			records, err := dbConnection.GetRecordIDs(0, 0, time.Now().Unix())
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, readType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -270,8 +271,8 @@ func TestPruneRecords(t *testing.T) {
 
 			err := dbConnection.PruneRecords([]int{3, 5})
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedFailureMetric))
 			p.Assert(t, SQLDeletedRecordsCounter)(xmetricstest.Value(6.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -284,13 +285,13 @@ func TestPruneRecords(t *testing.T) {
 
 func TestMultiInsertEvent(t *testing.T) {
 	testCreateErr := errors.New("test create error")
-	goodRecord := Record{
+	goodRecord := db.Record{
 		DeviceID: "1234",
 	}
 
 	tests := []struct {
 		description           string
-		records               []Record
+		records               []db.Record
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
 		createErr             error
@@ -299,14 +300,14 @@ func TestMultiInsertEvent(t *testing.T) {
 	}{
 		{
 			description:           "Success",
-			records:               []Record{goodRecord, {}},
+			records:               []db.Record{goodRecord, {}},
 			expectedSuccessMetric: 1.0,
 			expectedErr:           nil,
 			expectedCalls:         1,
 		},
 		{
 			description:           "Create Error",
-			records:               []Record{goodRecord, {DeviceID: "54321"}},
+			records:               []db.Record{goodRecord, {DeviceID: "54321"}},
 			expectedFailureMetric: 1.0,
 			createErr:             testCreateErr,
 			expectedErr:           testCreateErr,
@@ -332,8 +333,8 @@ func TestMultiInsertEvent(t *testing.T) {
 
 			err := dbConnection.InsertRecords(tc.records...)
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, insertType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.InsertType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.InsertType)(xmetricstest.Value(tc.expectedFailureMetric))
 			p.Assert(t, SQLInsertedRecordsCounter)(xmetricstest.Value(3.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -379,8 +380,8 @@ func TestRemoveAll(t *testing.T) {
 
 			err := dbConnection.RemoveAll()
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, deleteType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedFailureMetric))
 			p.Assert(t, SQLDeletedRecordsCounter)(xmetricstest.Value(6.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
@@ -461,8 +462,8 @@ func TestPing(t *testing.T) {
 
 			err := dbConnection.Ping()
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQuerySuccessCounter, typeLabel, pingType)(xmetricstest.Value(tc.expectedSuccessMetric))
-			p.Assert(t, SQLQueryFailureCounter, typeLabel, pingType)(xmetricstest.Value(tc.expectedFailureMetric))
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.PingType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.PingType)(xmetricstest.Value(tc.expectedFailureMetric))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {
@@ -470,4 +471,18 @@ func TestPing(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestImplementsInterfaces(t *testing.T) {
+	var (
+		dbConn interface{}
+	)
+	assert := assert.New(t)
+	dbConn = &Connection{}
+	_, ok := dbConn.(db.Inserter)
+	assert.True(ok)
+	_, ok = dbConn.(db.Pruner)
+	assert.True(ok)
+	_, ok = dbConn.(db.RecordGetter)
+	assert.True(ok)
 }
