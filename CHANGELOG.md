@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.7.0]
+- Added `record_id` to index
+- Changed `minMaxBatchSize` from 0 to 1
+- Restructured `db` repo
+
 ## [v0.6.0]
 - Added documentation
 - Added prometheus to docker-compose
@@ -116,7 +121,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.4.3..HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.7.0..HEAD
+[v0.7.0]: https://github.com/Comcast/codex/compare/v0.6.0...v0.7.0
+[v0.6.0]: https://github.com/Comcast/codex/compare/v0.5.0...v0.6.0
+[v0.5.0]: https://github.com/Comcast/codex/compare/v0.4.3...v0.5.0
 [v0.4.3]: https://github.com/Comcast/codex/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/Comcast/codex/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/Comcast/codex/compare/v0.4.0...v0.4.1
