@@ -179,10 +179,10 @@ func TestRetryGetRecordIDs(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockPruner)
 			if tc.numCalls > 1 {
-				mockObj.On("GetRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return([]int{}, initialErr).Times(tc.numCalls - 1)
+				mockObj.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return([]db.RecordToDelete{}, initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("GetRecordIDs", mock.Anything, mock.Anything, mock.Anything).Return([]int{}, tc.finalError).Once()
+				mockObj.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return([]db.RecordToDelete{}, tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -201,7 +201,7 @@ func TestRetryGetRecordIDs(t *testing.T) {
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
-			_, err := retryUpdateService.GetRecordIDs(0, 0, time.Now().Unix())
+			_, err := retryUpdateService.GetRecordsToDelete(0, 0, time.Now().Unix())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedRetryMetric))
 			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(1.0))
@@ -263,10 +263,10 @@ func TestRetryPruneRecords(t *testing.T) {
 			assert := assert.New(t)
 			mockObj := new(mockPruner)
 			if tc.numCalls > 1 {
-				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
+				mockObj.On("DeleteRecord", mock.Anything, mock.Anything, mock.Anything).Return(initialErr).Times(tc.numCalls - 1)
 			}
 			if tc.numCalls > 0 {
-				mockObj.On("PruneRecords", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
+				mockObj.On("DeleteRecord", mock.Anything, mock.Anything, mock.Anything).Return(tc.finalError).Once()
 			}
 			p := xmetricstest.NewProvider(nil, Metrics)
 			m := NewMeasures(p)
@@ -285,7 +285,7 @@ func TestRetryPruneRecords(t *testing.T) {
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
-			err := retryUpdateService.PruneRecords([]int{})
+			err := retryUpdateService.DeleteRecord(0, 0, 0)
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(tc.expectedRetryMetric))
 			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.DeleteType)(xmetricstest.Value(1.0))

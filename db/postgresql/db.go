@@ -272,15 +272,15 @@ func (c *Connection) GetRecordsOfType(deviceID string, limit int, eventType db.E
 	return deviceInfo, nil
 }
 
-func (c *Connection) GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error) {
-	ids, err := c.finder.findRecordIDs(limit, shard, deathDate)
+func (c *Connection) GetRecordsToDelete(shard int, limit int, deathDate int64) ([]db.RecordToDelete, error) {
+	recordsToDelete, err := c.finder.findRecordsToDelete(limit, shard, deathDate)
 	if err != nil {
 		c.measures.SQLQueryFailureCount.With(db.TypeLabel, db.ReadType).Add(1.0)
-		return []int{}, emperror.WrapWith(err, "Getting record IDs from database failed", "shard", shard, "death date", deathDate)
+		return []db.RecordToDelete{}, emperror.WrapWith(err, "Getting record IDs from database failed", "shard", shard, "death date", deathDate)
 	}
-	c.measures.SQLReadRecords.Add(float64(len(ids)))
+	c.measures.SQLReadRecords.Add(float64(len(recordsToDelete)))
 	c.measures.SQLQuerySuccessCount.With(db.TypeLabel, db.ReadType).Add(1.0)
-	return ids, nil
+	return recordsToDelete, nil
 }
 
 // GetBlacklist returns a list of blacklisted devices
@@ -294,13 +294,13 @@ func (c *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err error
 	return
 }
 
-// PruneRecords removes records past their deathdate.
-func (c *Connection) PruneRecords(records []int) error {
-	rowsAffected, err := c.deleter.delete(&db.Record{}, len(records), "record_id IN (?)", records)
+// DeleteRecord removes a record.
+func (c *Connection) DeleteRecord(shard int, deathDate int64, recordID int64) error {
+	rowsAffected, err := c.deleter.delete(&db.Record{}, 1, "shard = ? AND death_date = ? AND record_id = ?", shard, deathDate, recordID)
 	c.measures.SQLDeletedRecords.Add(float64(rowsAffected))
 	if err != nil {
 		c.measures.SQLQueryFailureCount.With(db.TypeLabel, db.DeleteType).Add(1.0)
-		return emperror.WrapWith(err, "Prune records failed", "record ids", records)
+		return emperror.WrapWith(err, "Prune records failed", "record id", recordID)
 	}
 	c.measures.SQLQuerySuccessCount.With(db.TypeLabel, db.DeleteType).Add(1.0)
 	return nil

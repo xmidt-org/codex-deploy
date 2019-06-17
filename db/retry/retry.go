@@ -138,10 +138,10 @@ type RetryUpdateService struct {
 	config retryConfig
 }
 
-func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64) ([]int, error) {
+func (ru RetryUpdateService) GetRecordsToDelete(shard int, limit int, deathDate int64) ([]db.RecordToDelete, error) {
 	var (
 		err       error
-		recordIDs []int
+		recordIDs []db.RecordToDelete
 	)
 
 	retries := ru.config.retries
@@ -156,7 +156,7 @@ func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64)
 			ru.config.sleep(sleepTime)
 			sleepTime = sleepTime * ru.config.intervalMult
 		}
-		if recordIDs, err = ru.pruner.GetRecordIDs(shard, limit, deathDate); err == nil {
+		if recordIDs, err = ru.pruner.GetRecordsToDelete(shard, limit, deathDate); err == nil {
 			break
 		}
 	}
@@ -165,7 +165,7 @@ func (ru RetryUpdateService) GetRecordIDs(shard int, limit int, deathDate int64)
 	return recordIDs, err
 }
 
-func (ru RetryUpdateService) PruneRecords(records []int) error {
+func (ru RetryUpdateService) DeleteRecord(shard int, deathdate int64, recordID int64) error {
 	var err error
 
 	retries := ru.config.retries
@@ -180,7 +180,7 @@ func (ru RetryUpdateService) PruneRecords(records []int) error {
 			ru.config.sleep(sleepTime)
 			sleepTime = sleepTime * ru.config.intervalMult
 		}
-		if err = ru.pruner.PruneRecords(records); err == nil {
+		if err = ru.pruner.DeleteRecord(shard, deathdate, recordID); err == nil {
 			break
 		}
 	}
