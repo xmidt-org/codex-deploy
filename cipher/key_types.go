@@ -17,6 +17,7 @@
 
 package cipher
 
+// KeyType is an enum for how the key can be used.
 type KeyType string
 
 const (

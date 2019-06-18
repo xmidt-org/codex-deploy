@@ -22,11 +22,12 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"io/ioutil"
+
 	"github.com/Comcast/webpa-common/logging"
 	"github.com/go-kit/kit/log"
 	"github.com/goph/emperror"
 	"github.com/pkg/errors"
-	"io/ioutil"
 )
 
 var (
@@ -62,20 +63,27 @@ type Config struct {
 	Keys map[KeyType]string `json:"keys,omitempty"`
 }
 
+// KeyLoader gets the bytes for a key.
 type KeyLoader interface {
 	GetBytes() ([]byte, error)
 }
+
+// EncryptLoader loads an encrypter.
 type EncryptLoader interface {
 	LoadEncrypt() (Encrypt, error)
 }
+
+//DecryptLoader loads a decrypter.
 type DecryptLoader interface {
 	LoadDecrypt() (Decrypt, error)
 }
 
+// FileLoader loads a key from a file.
 type FileLoader struct {
 	Path string
 }
 
+// GetBytes returns the bytes found at the filepath.
 func (f *FileLoader) GetBytes() ([]byte, error) {
 	return ioutil.ReadFile(f.Path)
 }
@@ -86,14 +94,17 @@ func CreateFileLoader(keys map[KeyType]string, keyType KeyType) KeyLoader {
 	}
 }
 
+// BytesLoader implements the KeyLoader.
 type BytesLoader struct {
 	Data []byte
 }
 
+// GetBytes returns the bytes stored by the BytesLoader
 func (b *BytesLoader) GetBytes() ([]byte, error) {
 	return b.Data, nil
 }
 
+// GetPrivateKey uses a keyloader to load a private key.
 func GetPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
 	if loader == nil {
 		return nil, errors.New("no loader")
@@ -120,6 +131,7 @@ func GetPrivateKey(loader KeyLoader) (*rsa.PrivateKey, error) {
 	}
 }
 
+// GetPublicKey uses a keyloader to load a public key.
 func GetPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	if loader == nil {
 		return nil, errors.New("no loader")
@@ -146,6 +158,7 @@ func GetPublicKey(loader KeyLoader) (*rsa.PublicKey, error) {
 	}
 }
 
+// LoadEncrypt uses the config to load an encrypter.
 func (config *Config) LoadEncrypt() (Encrypt, error) {
 	var err error
 	if config.Logger == nil {
@@ -197,6 +210,7 @@ func (config *Config) LoadEncrypt() (Encrypt, error) {
 	return DefaultCipherEncrypter(), emperror.Wrap(err, "failed to load custom algorithm")
 }
 
+// LoadDecrypt uses the config to load a decrypter.
 func (config *Config) LoadDecrypt() (Decrypt, error) {
 	var err error
 	if config.Logger == nil {

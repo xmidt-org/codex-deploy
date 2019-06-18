@@ -13,30 +13,38 @@ const (
 	defaultUpdateInterval = time.Minute
 )
 
+// BlackListedItem is the regex that expresses the devices that are blacklisted
+// and the reason why.
 type BlackListedItem struct {
 	ID     string
 	Reason string
 }
 
+// TableName sets BlackListedItem's table name to be "blacklist"; for the GORM driver.
 func (BlackListedItem) TableName() string {
 	return "blacklist"
 }
 
+// List is for checking if a device id is in the blacklist.
 type List interface {
 	InList(ID string) (reason string, ok bool)
 }
 
+// SyncList is an implemention of the List interface that works synchronously.
 type SyncList struct {
 	rules    map[string]string
 	dataLock sync.RWMutex
 }
 
+// NewEmptySyncList creates a new SyncList that holds no information.
 func NewEmptySyncList() SyncList {
 	return SyncList{
 		rules: make(map[string]string),
 	}
 }
 
+// InList returns whether or not a device is on the blacklist and why, if it's
+// on the list.
 func (m *SyncList) InList(ID string) (string, bool) {
 	m.dataLock.RLock()
 	defer m.dataLock.RUnlock()
@@ -56,6 +64,8 @@ func (m *SyncList) InList(ID string) (string, bool) {
 	return "", false
 }
 
+// UpdateList takes the data given and overwrites the blacklist with the new
+// information.
 func (m *SyncList) UpdateList(data []BlackListedItem) {
 
 	newData := make(map[string]string)
@@ -68,6 +78,7 @@ func (m *SyncList) UpdateList(data []BlackListedItem) {
 	m.dataLock.Unlock()
 }
 
+// Updater is for getting the blacklist.
 type Updater interface {
 	GetBlacklist() ([]BlackListedItem, error)
 }
@@ -79,6 +90,7 @@ type listRefresher struct {
 	cache   SyncList
 }
 
+// InList checks if a specified device id is on the blacklist.
 func (d *listRefresher) InList(ID string) (string, bool) {
 	return d.cache.InList(ID)
 }
@@ -91,11 +103,14 @@ func (d *listRefresher) updateList() {
 	}
 }
 
+// RefresherConfig is the configuration specifying how often to update the list
+// and what logger to use when logging.
 type RefresherConfig struct {
 	UpdateInterval time.Duration
 	Logger         log.Logger
 }
 
+// NewListRefresher takes the given values and uses them to create a new listRefresher
 func NewListRefresher(config RefresherConfig, updater Updater, stop chan struct{}) List {
 	if config.Logger == nil {
 		config.Logger = logging.DefaultLogger()

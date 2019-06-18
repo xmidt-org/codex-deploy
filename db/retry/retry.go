@@ -15,6 +15,10 @@
  *
  */
 
+// package dbretry contains structs that implement various db interfaces as
+// well as consume them.  They allow consumers to easily try to interact with
+// the database a configurable number of times, with configurable backoff
+// options and metrics.
 package dbretry
 
 import (
@@ -44,8 +48,11 @@ type retryConfig struct {
 	measures     Measures
 }
 
+// Option is the function used to configure the retry objects.
 type Option func(r *retryConfig)
 
+// WithRetries sets the number of times to potentially try to interact with the
+// database if the inital attempt doesn't succeed.
 func WithRetries(retries int) Option {
 	return func(r *retryConfig) {
 		// only set retries if the value is valid
@@ -55,6 +62,9 @@ func WithRetries(retries int) Option {
 	}
 }
 
+// WithInterval sets the amount of time to wait between the initial attempt and
+// the first retry.  If the interval multiplier is 1, this interval is used
+// between every attempt.
 func WithInterval(interval time.Duration) Option {
 	return func(r *retryConfig) {
 		// only set interval if the value is valid
@@ -64,6 +74,13 @@ func WithInterval(interval time.Duration) Option {
 	}
 }
 
+// WithIntervalMultiplier sets the interval multiplier, which is multiplied
+// against the interval time for each wait time after the first retry.  For
+// example, if the interval is 1s, the interval multiplier 5, and the number of
+// retries 3, then between the initial attempt and first retry, the program
+// will wait 1s.  Between the first retry and the second retry, the program
+// will wait 5s.  Between the second retry and the third, the program will
+// wait 25s.  This is assuming all attempts fail.
 func WithIntervalMultiplier(mult time.Duration) Option {
 	return func(r *retryConfig) {
 		if mult > 1 {
@@ -72,6 +89,8 @@ func WithIntervalMultiplier(mult time.Duration) Option {
 	}
 }
 
+// WithSleep sets the function used for sleeping.  By default, this is
+// time.Sleep.
 func WithSleep(sleep func(time.Duration)) Option {
 	return func(r *retryConfig) {
 		if sleep != nil {
@@ -80,6 +99,7 @@ func WithSleep(sleep func(time.Duration)) Option {
 	}
 }
 
+// WithMeasures provides a provider to use for metrics.
 func WithMeasures(p provider.Provider) Option {
 	return func(r *retryConfig) {
 		if p != nil {
@@ -88,11 +108,17 @@ func WithMeasures(p provider.Provider) Option {
 	}
 }
 
+// RetryInsertService is a wrapper for a db.Inserter that attempts to insert
+// a configurable number of times if the inserts fail.
 type RetryInsertService struct {
 	inserter db.Inserter
 	config   retryConfig
 }
 
+// InsertRecords uses the inserter to insert the records and tries again if
+// inserting fails.  Between each try, it calculates how long to wait and then
+// waits for that period of time before trying again. Only the error from the
+// last failure is returned.
 func (ri RetryInsertService) InsertRecords(records ...db.Record) error {
 	var err error
 
@@ -117,6 +143,8 @@ func (ri RetryInsertService) InsertRecords(records ...db.Record) error {
 	return err
 }
 
+// CreateRetryInsertService takes an inserter and the options provided and
+// creates a RetryInsertService.
 func CreateRetryInsertService(inserter db.Inserter, options ...Option) RetryInsertService {
 	ris := RetryInsertService{
 		inserter: inserter,
@@ -133,11 +161,17 @@ func CreateRetryInsertService(inserter db.Inserter, options ...Option) RetryInse
 	return ris
 }
 
+// RetryUpdateService is a wrapper for a db.Pruner that attempts either part of
+// the pruning process a configurable number of times.
 type RetryUpdateService struct {
 	pruner db.Pruner
 	config retryConfig
 }
 
+// GetRecordsToDelete uses the pruner to get records and tries again if
+// getting fails.  Between each try, it calculates how long to wait and then
+// waits for that period of time before trying again. Only the error from the
+// last failure is returned.
 func (ru RetryUpdateService) GetRecordsToDelete(shard int, limit int, deathDate int64) ([]db.RecordToDelete, error) {
 	var (
 		err       error
@@ -165,6 +199,10 @@ func (ru RetryUpdateService) GetRecordsToDelete(shard int, limit int, deathDate 
 	return recordIDs, err
 }
 
+// DeleteRecord uses the pruner to delete a record and tries again if
+// deleting fails.  Between each try, it calculates how long to wait and then
+// waits for that period of time before trying again. Only the error from the
+// last failure is returned.
 func (ru RetryUpdateService) DeleteRecord(shard int, deathdate int64, recordID int64) error {
 	var err error
 
@@ -189,6 +227,8 @@ func (ru RetryUpdateService) DeleteRecord(shard int, deathdate int64, recordID i
 	return err
 }
 
+// CreateRetryUpdateService takes a pruner and the options provided and creates
+// a RetryUpdateService.
 func CreateRetryUpdateService(pruner db.Pruner, options ...Option) RetryUpdateService {
 	rus := RetryUpdateService{
 		pruner: pruner,
@@ -205,11 +245,17 @@ func CreateRetryUpdateService(pruner db.Pruner, options ...Option) RetryUpdateSe
 	return rus
 }
 
+// RetryListGService is a wrapper for a blacklist Updater that attempts to
+// get the blacklist a configurable number of times if the gets fail.
 type RetryListGService struct {
 	lg     blacklist.Updater
 	config retryConfig
 }
 
+// GetBlacklist uses the updater to get the blacklist and tries again if
+// getting fails.  Between each try, it calculates how long to wait and then
+// waits for that period of time before trying again. Only the error from the
+// last failure is returned.
 func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
 	retries := ltg.config.retries
 	if retries < 1 {
@@ -232,6 +278,8 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 	return
 }
 
+// CreateRetryListGService takes an updater and the options provided and creates
+// a RetryListGService.
 func CreateRetryListGService(listGetter blacklist.Updater, options ...Option) RetryListGService {
 	rlgs := RetryListGService{
 		lg: listGetter,
@@ -248,11 +296,17 @@ func CreateRetryListGService(listGetter blacklist.Updater, options ...Option) Re
 	return rlgs
 }
 
+// RetryRGService is a wrapper for a record getter that attempts to
+// get records for a device a configurable number of times if the gets fail.
 type RetryRGService struct {
 	rg     db.RecordGetter
 	config retryConfig
 }
 
+// GetRecords uses the getter to get records for a device and tries again if
+// getting fails.  Between each try, it calculates how long to wait and then
+// waits for that period of time before trying again. Only the error from the
+// last failure is returned.
 func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]db.Record, error) {
 	var (
 		err    error
@@ -280,6 +334,10 @@ func (rtg RetryRGService) GetRecords(deviceID string, limit int) ([]db.Record, e
 	return record, err
 }
 
+// GetRecordsOfType uses the getter to get records of a specified type for a
+// device and tries again if getting fails.  Between each try, it calculates
+// how long to wait and then waits for that period of time before trying again.
+// Only the error from the last failure is returned.
 func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType db.EventType) ([]db.Record, error) {
 	var (
 		err    error
@@ -307,6 +365,8 @@ func (rtg RetryRGService) GetRecordsOfType(deviceID string, limit int, eventType
 	return record, err
 }
 
+// CreateRetryRGService takes a record getter and the options provided and
+// creates a RetryRGService.
 func CreateRetryRGService(recordGetter db.RecordGetter, options ...Option) RetryRGService {
 	rrgs := RetryRGService{
 		rg: recordGetter,
