@@ -18,7 +18,7 @@ const (
 	CipherKey = "cipher"
 )
 
-// Op6ions is the list of configurations used to load ciphers.
+// Options is the list of configurations used to load ciphers.
 type Options []Config
 
 // Ciphers provide all of the possibly algorithms that can be used to encrypt
