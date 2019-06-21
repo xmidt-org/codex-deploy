@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// LocalCerts specify where locally to find the certs for a hash.
 type LocalCerts struct {
 	Path     string
 	HashName string
@@ -17,12 +18,16 @@ const (
 	CipherKey = "cipher"
 )
 
+// Options is the list of configurations used to load ciphers.
 type Options []Config
 
+// Ciphers provide all of the possibly algorithms that can be used to encrypt
+// or decrypt.
 type Ciphers struct {
 	Options map[AlgorithmType]map[string]Decrypt
 }
 
+// GetEncrypter takes options and creates an encrypter out of it.
 func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
 	var lastErr error
 	for _, elem := range o {
@@ -35,6 +40,7 @@ func (o Options) GetEncrypter(logger log.Logger) (Encrypt, error) {
 	return DefaultCipherEncrypter(), emperror.Wrap(lastErr, "failed to load encrypt options")
 }
 
+// PopulateCiphers takes options and a logger and creates ciphers from them.
 func PopulateCiphers(o Options, logger log.Logger) Ciphers {
 	c := Ciphers{
 		Options: map[AlgorithmType]map[string]Decrypt{},
@@ -51,6 +57,7 @@ func PopulateCiphers(o Options, logger log.Logger) Ciphers {
 	return c
 }
 
+// Get returns a decrypter given an algorithm and KID.
 func (c *Ciphers) Get(alg AlgorithmType, KID string) (Decrypt, bool) {
 	if d, ok := c.Options[alg][KID]; ok {
 		return d, ok

@@ -17,6 +17,7 @@
 
 package cipher
 
+// AlgorithmType is an enum used to specify which algorithm is being used.
 type AlgorithmType string
 
 const (
@@ -26,7 +27,9 @@ const (
 	RSAAsymmetric AlgorithmType = "rsa-asy"
 )
 
-func ParseAlogrithmType(algo string) AlgorithmType {
+// ParseAlgorithmType takes a string and returns an enum if one matches,
+// otherwise returns the None AlgorithmType enum.
+func ParseAlgorithmType(algo string) AlgorithmType {
 	if algo == string(Box) {
 		return Box
 	} else if algo == string(RSASymmetric) {

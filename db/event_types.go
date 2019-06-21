@@ -19,6 +19,7 @@ package db
 
 //go:generate stringer -type=EventType
 
+// EventType is an enum for specifying the type of event being stored.
 type EventType int
 
 const (
@@ -36,6 +37,7 @@ var (
 	}
 )
 
+// ParseEventType returns the enum when given a string.
 func ParseEventType(event string) EventType {
 	if value, ok := eventUnmarshal[event]; ok {
 		return value

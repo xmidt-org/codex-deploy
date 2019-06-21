@@ -23,6 +23,7 @@ import (
 	"strings"
 )
 
+// GetHash finds a matching Hash for the string given.
 func GetHash(hashType string) crypto.Hash {
 	if elem, ok := hashFunctions[strings.ToUpper(hashType)]; ok {
 		return elem
@@ -30,9 +31,12 @@ func GetHash(hashType string) crypto.Hash {
 	return crypto.BLAKE2b_512
 }
 
+// HashLoader can get a hash.
 type HashLoader interface {
 	GetHash() (crypto.Hash, error)
 }
+
+// BasicHashLoader implements HashLoader.
 type BasicHashLoader struct {
 	HashName string `mapstructure:"hash"`
 }
@@ -49,6 +53,7 @@ func (b *BasicHashLoader) GetHash() (crypto.Hash, error) {
 	return 0, errors.New("hashname " + b.HashName + " not found")
 }
 
+// RSALoader loads the encrypter/decrypter for the RSA algorithm.
 type RSALoader struct {
 	KID        string
 	Hash       HashLoader
@@ -56,6 +61,7 @@ type RSALoader struct {
 	PublicKey  KeyLoader
 }
 
+// LoadEncrypt loads the RSA encrypter.
 func (loader *RSALoader) LoadEncrypt() (Encrypt, error) {
 	hashFunc, err := loader.Hash.GetHash()
 	if err != nil {
@@ -71,6 +77,7 @@ func (loader *RSALoader) LoadEncrypt() (Encrypt, error) {
 	return NewRSAEncrypter(hashFunc, privateKey, publicKey, loader.KID), nil
 }
 
+// LoadDecrypt loads the RSA decrypter.
 func (loader *RSALoader) LoadDecrypt() (Decrypt, error) {
 	hashFunc, err := loader.Hash.GetHash()
 	if err != nil {

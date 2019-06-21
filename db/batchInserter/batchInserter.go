@@ -15,6 +15,9 @@
  *
  */
 
+// package batchInserter provides a wrapper around the db.Inserter to provide a
+// way to group records together before inserting, in order to decrease
+// database requests needed for inserting.
 package batchInserter
 
 import (
@@ -52,6 +55,9 @@ func defaultTicker(d time.Duration) (<-chan time.Time, func()) {
 	return ticker.C, ticker.Stop
 }
 
+// BatchInserter manages batching events that need to be inserted, ensuring
+// that an event that needs to be inserted isn't waiting for longer than a set
+// period of time and that each batch doesn't pass a specified size.
 type BatchInserter struct {
 	insertQueue   chan db.Record
 	inserter      db.Inserter
@@ -63,6 +69,7 @@ type BatchInserter struct {
 	ticker        func(time.Duration) (<-chan time.Time, func())
 }
 
+// Config holds the configuration values for a batch inserter.
 type Config struct {
 	MaxWorkers       int
 	MaxBatchSize     int
@@ -70,6 +77,9 @@ type Config struct {
 	QueueSize        int
 }
 
+// NewBatchInserter creates a BatchInserter with the given values, ensuring
+// that the configuration and other values given are valid.  If configuration
+// values aren't valid, a default value is used.
 func NewBatchInserter(config Config, logger log.Logger, metricsRegistry provider.Provider, inserter db.Inserter) (*BatchInserter, error) {
 	if inserter == nil {
 		return nil, errors.New("no inserter")
@@ -105,11 +115,14 @@ func NewBatchInserter(config Config, logger log.Logger, metricsRegistry provider
 	return &b, nil
 }
 
+// Start starts the batcher, which pulls from the queue inside of the BatchInserter.
 func (b *BatchInserter) Start() {
 	b.wg.Add(1)
 	go b.batchRecords()
 }
 
+// Insert adds the event to the queue inside of BatchInserter, preparing for it
+// to be inserted.  This can block, if the queue is full.
 func (b *BatchInserter) Insert(record db.Record) {
 	b.insertQueue <- record
 	if b.measures != nil {
@@ -117,6 +130,11 @@ func (b *BatchInserter) Insert(record db.Record) {
 	}
 }
 
+// Stop closes the internal queue and waits for the workers to finish
+// processing what has already been added.  This can block as it waits for
+// everything to stop.  After Stop() is called, Insert() should not be called
+// again, or there will be a panic.
+// TODO: ensure consumers can't cause a panic?
 func (b *BatchInserter) Stop() {
 	close(b.insertQueue)
 	b.wg.Wait()

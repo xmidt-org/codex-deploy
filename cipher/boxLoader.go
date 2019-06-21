@@ -22,6 +22,7 @@ import (
 	"errors"
 )
 
+// BoxLoader loads the box encryption/decryption.
 type BoxLoader struct {
 	KID        string
 	PrivateKey KeyLoader
@@ -56,6 +57,7 @@ func (boxLoader *BoxLoader) getBoxPublicKey() ([32]byte, error) {
 	return publicKey, nil
 }
 
+// LoadEncrypt loads an encrypter for the box algorithm.
 func (boxLoader *BoxLoader) LoadEncrypt() (Encrypt, error) {
 	publicKey, err := boxLoader.getBoxPublicKey()
 	if err != nil {
@@ -69,6 +71,7 @@ func (boxLoader *BoxLoader) LoadEncrypt() (Encrypt, error) {
 	return NewBoxEncrypter(privateKey, publicKey, boxLoader.KID), nil
 }
 
+// LoadDecrypt loads a decrypter for the box algorithm.
 func (boxLoader *BoxLoader) LoadDecrypt() (Decrypt, error) {
 	publicKey, err := boxLoader.getBoxPublicKey()
 	if err != nil {

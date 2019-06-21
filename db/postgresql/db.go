@@ -15,6 +15,8 @@
  *
  */
 
+// package postgresql provides a way to connect to a postgresql database to
+// keep track of device events.
 package postgresql
 
 import (
@@ -51,7 +53,8 @@ const (
 	defaultMaxOpenConns   = 0
 )
 
-// Config contains the initial configuration information needed to create a db connection.
+// Config contains the initial configuration information needed to create a
+// postgresql db connection.
 type Config struct {
 	Server         string
 	Username       string
@@ -74,7 +77,8 @@ type Config struct {
 	PingInterval time.Duration
 }
 
-// Connection contains the tools to edit the database.
+// Connection manages the connection to the postgresql database, and maintains
+// a health check on the database connection.
 type Connection struct {
 	finder      finder
 	findList    findList
@@ -242,7 +246,7 @@ func (c *Connection) setupMetrics() {
 	c.stopThreads = append(c.stopThreads, metricsStop)
 }
 
-// GetRecords returns a list of records for a given device
+// GetRecords returns a list of records for a given device.
 func (c *Connection) GetRecords(deviceID string, limit int) ([]db.Record, error) {
 	var (
 		deviceInfo []db.Record
@@ -257,7 +261,7 @@ func (c *Connection) GetRecords(deviceID string, limit int) ([]db.Record, error)
 	return deviceInfo, nil
 }
 
-// GetRecords returns a list of records for a given device
+// GetRecords returns a list of records for a given device and event type.
 func (c *Connection) GetRecordsOfType(deviceID string, limit int, eventType db.EventType) ([]db.Record, error) {
 	var (
 		deviceInfo []db.Record
@@ -272,6 +276,8 @@ func (c *Connection) GetRecordsOfType(deviceID string, limit int, eventType db.E
 	return deviceInfo, nil
 }
 
+// GetRecordsToDelete returns a list of record ids and deathdates not past a
+// given date.
 func (c *Connection) GetRecordsToDelete(shard int, limit int, deathDate int64) ([]db.RecordToDelete, error) {
 	recordsToDelete, err := c.finder.findRecordsToDelete(limit, shard, deathDate)
 	if err != nil {
@@ -283,7 +289,7 @@ func (c *Connection) GetRecordsToDelete(shard int, limit int, deathDate int64) (
 	return recordsToDelete, nil
 }
 
-// GetBlacklist returns a list of blacklisted devices
+// GetBlacklist returns a list of blacklisted devices.
 func (c *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
 	err = c.findList.findBlacklist(&list)
 	if err != nil {
@@ -306,7 +312,7 @@ func (c *Connection) DeleteRecord(shard int, deathDate int64, recordID int64) er
 	return nil
 }
 
-// InsertEvent adds a record to the table.
+// InsertEvent adds a list of records to the table.
 func (c *Connection) InsertRecords(records ...db.Record) error {
 	rowsAffected, err := c.mutliInsert.insert(records)
 	c.measures.SQLInsertedRecords.Add(float64(rowsAffected))
@@ -318,6 +324,7 @@ func (c *Connection) InsertRecords(records ...db.Record) error {
 	return nil
 }
 
+// Ping is for pinging the database to verify that the connection is still good.
 func (c *Connection) Ping() error {
 	err := c.pinger.ping()
 	if err != nil {
@@ -328,6 +335,7 @@ func (c *Connection) Ping() error {
 	return nil
 }
 
+// Close closes the database connection.
 func (c *Connection) Close() error {
 	for _, stopThread := range c.stopThreads {
 		stopThread <- struct{}{}

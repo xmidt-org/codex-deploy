@@ -23,13 +23,14 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"hash"
+	"io"
+	"os"
+
 	"github.com/goph/emperror"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/nacl/box"
-	"hash"
-	"io"
-	"os"
 )
 
 func init() {
@@ -84,10 +85,12 @@ func GeneratePrivateKey(size int) *rsa.PrivateKey {
 	return privateKey
 }
 
+// DefaultCipherEncrypter returns a NOOP encrypter.
 func DefaultCipherEncrypter() Encrypt {
 	return &NOOP{}
 }
 
+// DEfaultCipherDecrypter returns a NOOP decrypter.
 func DefaultCipherDecrypter() Decrypt {
 	return &NOOP{}
 }
@@ -95,22 +98,27 @@ func DefaultCipherDecrypter() Decrypt {
 // NOOP will just return the message
 type NOOP struct{}
 
+// GetAlgorithm returns None.
 func (*NOOP) GetAlgorithm() AlgorithmType {
 	return None
 }
 
+// GetKID returns none.
 func (*NOOP) GetKID() string {
 	return "none"
 }
 
+//EncryptMessage simply returns the message given.
 func (*NOOP) EncryptMessage(message []byte) (crypt []byte, nonce []byte, err error) {
 	return message, []byte{}, nil
 }
 
+// DecryptMessage simply returns the message given.
 func (*NOOP) DecryptMessage(cipher []byte, nonce []byte) (message []byte, err error) {
 	return cipher, nil
 }
 
+// GetAlgorithm returns the algorithm type.
 func (c *rsaEncrypterDecrypter) GetAlgorithm() AlgorithmType {
 	if c.recipientPublicKey == nil || c.senderPublicKey == nil {
 		return RSASymmetric
@@ -118,6 +126,7 @@ func (c *rsaEncrypterDecrypter) GetAlgorithm() AlgorithmType {
 	return RSAAsymmetric
 }
 
+// GetKID returns the KID.
 func (c *rsaEncrypterDecrypter) GetKID() string {
 	return c.kid
 }
@@ -132,6 +141,7 @@ type rsaEncrypterDecrypter struct {
 	label               []byte
 }
 
+// NewRSAEncrypter returns an RSA encrypter.
 func NewRSAEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipientPublicKey *rsa.PublicKey, kid string) Encrypt {
 	return &rsaEncrypterDecrypter{
 		kid:                kid,
@@ -142,6 +152,7 @@ func NewRSAEncrypter(hash crypto.Hash, senderPrivateKey *rsa.PrivateKey, recipie
 	}
 }
 
+// NewRSADecrypter returns an RSA decrypter.
 func NewRSADecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, senderPublicKey *rsa.PublicKey, kid string) Decrypt {
 	return &rsaEncrypterDecrypter{
 		kid:                 kid,
@@ -152,6 +163,7 @@ func NewRSADecrypter(hash crypto.Hash, recipientPrivateKey *rsa.PrivateKey, send
 	}
 }
 
+// EncryptMessage encrypts the message using RSA.
 func (c *rsaEncrypterDecrypter) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	cipherdata, err := rsa.EncryptOAEP(
 		c.hasher.New(),
@@ -183,6 +195,7 @@ func (c *rsaEncrypterDecrypter) EncryptMessage(message []byte) ([]byte, []byte, 
 	return cipherdata, signature, nil
 }
 
+// DecryptMessage decrypts the message using RSA.
 func (c *rsaEncrypterDecrypter) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	decrypted, err := rsa.DecryptOAEP(
 		c.hasher.New(),
@@ -219,14 +232,17 @@ type encryptBox struct {
 	sharedEncryptKey   *[32]byte
 }
 
+// GetAlgorithm returns the algorithm type.
 func (enBox *encryptBox) GetAlgorithm() AlgorithmType {
 	return Box
 }
 
+// GetKID returns the KID.
 func (enBox *encryptBox) GetKID() string {
 	return enBox.kid
 }
 
+// NewBoxEncrypter returns a new box encrypter.
 func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte, kid string) Encrypt {
 
 	encrypter := encryptBox{
@@ -241,6 +257,7 @@ func NewBoxEncrypter(senderPrivateKey [32]byte, recipientPublicKey [32]byte, kid
 	return &encrypter
 }
 
+// Encrypt message encrypts the message using the box algorithm.
 func (enBox *encryptBox) EncryptMessage(message []byte) ([]byte, []byte, error) {
 	var nonce [24]byte
 	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
@@ -259,14 +276,17 @@ type decryptBox struct {
 	sharedDecryptKey    *[32]byte
 }
 
+// GetAlgorithm returns the algorithm type.
 func (deBox *decryptBox) GetAlgorithm() AlgorithmType {
 	return Box
 }
 
+// GetKID returns the KID.
 func (deBox *decryptBox) GetKID() string {
 	return deBox.kid
 }
 
+// NewBoxDecrypter returns a new box decrypter.
 func NewBoxDecrypter(recipientPrivateKey [32]byte, senderPublicKey [32]byte, kid string) Decrypt {
 
 	decrypter := decryptBox{
@@ -281,6 +301,7 @@ func NewBoxDecrypter(recipientPrivateKey [32]byte, senderPublicKey [32]byte, kid
 	return &decrypter
 }
 
+// DecryptMessage decrypts the message using the box algorithm.
 func (deBox *decryptBox) DecryptMessage(cipher []byte, nonce []byte) ([]byte, error) {
 	var decryptNonce [24]byte
 	copy(decryptNonce[:], nonce[:24])

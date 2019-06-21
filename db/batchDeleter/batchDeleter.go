@@ -15,6 +15,9 @@
  *
  */
 
+// package batchDeleter provides a wrapper around the db.Pruner to provide a
+// way to get expired records at a given interval and delete them at a separate
+// given interval.
 package batchDeleter
 
 import (
@@ -49,6 +52,7 @@ var (
 	defaultLogger = log.NewNopLogger()
 )
 
+// Config holds the configuration values for a batch deleter.
 type Config struct {
 	Shard          int
 	MaxWorkers     int
@@ -59,6 +63,8 @@ type Config struct {
 	GetWaitTime    time.Duration
 }
 
+// BatchDeleter manages getting records that have expired and then deleting
+// them.
 type BatchDeleter struct {
 	pruner        db.Pruner
 	deleteQueue   chan db.RecordToDelete
@@ -72,6 +78,9 @@ type BatchDeleter struct {
 	stop          chan struct{}
 }
 
+// NewBatchDeleter creates a BatchDeleter with the given values, ensuring
+// that the configuration and other values given are valid.  If configuration
+// values aren't valid, a default value is used.
 func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.Provider, pruner db.Pruner) (*BatchDeleter, error) {
 	if pruner == nil {
 		return nil, errors.New("no pruner")
@@ -115,6 +124,8 @@ func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.
 	}, nil
 }
 
+// Start starts the batcher, which includes a ticker for getting expired
+// records at an interval and the workers that do the deleting.
 func (d *BatchDeleter) Start() {
 	ticker := time.NewTicker(d.config.GetWaitTime)
 	d.stopTicker = ticker.Stop
@@ -123,6 +134,9 @@ func (d *BatchDeleter) Start() {
 	go d.delete()
 }
 
+// Stop closes the internal queue and waits for the workers to finish
+// processing what has already been added.  This can block as it waits for
+// everything to stop.
 func (d *BatchDeleter) Stop() {
 	close(d.stop)
 	d.wg.Wait()
