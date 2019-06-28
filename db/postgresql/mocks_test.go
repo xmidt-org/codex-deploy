@@ -42,6 +42,15 @@ func (f *mockFinder) findRecordsToDelete(limit int, shard int, deathDate int64) 
 	return args.Get(0).([]db.RecordToDelete), args.Error(1)
 }
 
+type mockDeviceFinder struct {
+	mock.Mock
+}
+
+func (df *mockDeviceFinder) getList(offset string, limit int, where ...interface{}) ([]string, error) {
+	args := df.Called(offset, limit, where)
+	return args.Get(0).([]string), args.Error(1)
+}
+
 type mockMultiInsert struct {
 	mock.Mock
 }

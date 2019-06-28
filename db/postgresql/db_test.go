@@ -181,7 +181,6 @@ func TestGetRecordIDs(t *testing.T) {
 		expectedSuccessMetric float64
 		expectedFailureMetric float64
 		expectedErr           error
-		expectedCalls         int
 	}{
 		{
 			description:           "Success",
@@ -189,7 +188,6 @@ func TestGetRecordIDs(t *testing.T) {
 			expectedRecords:       []db.RecordToDelete{{DeathDate: 222, RecordID: 12345}},
 			expectedSuccessMetric: 1.0,
 			expectedErr:           nil,
-			expectedCalls:         1,
 		},
 		{
 			description:           "Get Error",
@@ -197,7 +195,6 @@ func TestGetRecordIDs(t *testing.T) {
 			expectedRecords:       []db.RecordToDelete{},
 			expectedFailureMetric: 1.0,
 			expectedErr:           errors.New("test Get error"),
-			expectedCalls:         1,
 		},
 	}
 
@@ -211,9 +208,7 @@ func TestGetRecordIDs(t *testing.T) {
 				measures: m,
 				finder:   mockObj,
 			}
-			if tc.expectedCalls > 0 {
-				mockObj.On("findRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedRecords, tc.expectedErr).Times(tc.expectedCalls)
-			}
+			mockObj.On("findRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedRecords, tc.expectedErr).Once()
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 
@@ -227,6 +222,56 @@ func TestGetRecordIDs(t *testing.T) {
 				assert.Contains(err.Error(), tc.expectedErr.Error())
 			}
 			assert.Equal(tc.expectedRecords, records)
+		})
+	}
+}
+
+func TestDeviceList(t *testing.T) {
+	tests := []struct {
+		description           string
+		expectedIDs           []string
+		expectedSuccessMetric float64
+		expectedFailureMetric float64
+		expectedErr           error
+	}{
+		{
+			description:           "Success",
+			expectedIDs:           []string{"aaa", "bbb", "ccc"},
+			expectedSuccessMetric: 1.0,
+			expectedErr:           nil,
+		},
+		{
+			description:           "Get Error",
+			expectedIDs:           []string{},
+			expectedFailureMetric: 1.0,
+			expectedErr:           errors.New("test Get error"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			assert := assert.New(t)
+			mockObj := new(mockDeviceFinder)
+			p := xmetricstest.NewProvider(nil, Metrics)
+			m := NewMeasures(p)
+			dbConnection := Connection{
+				measures:     m,
+				deviceFinder: mockObj,
+			}
+			mockObj.On("getList", mock.Anything, mock.Anything, mock.Anything).Return(tc.expectedIDs, tc.expectedErr).Once()
+			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
+			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
+
+			result, err := dbConnection.GetDeviceList("", 10)
+			mockObj.AssertExpectations(t)
+			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
+			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
+			if tc.expectedErr == nil || err == nil {
+				assert.Equal(tc.expectedErr, err)
+			} else {
+				assert.Contains(err.Error(), tc.expectedErr.Error())
+			}
+			assert.Equal(tc.expectedIDs, result)
 		})
 	}
 }

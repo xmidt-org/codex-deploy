@@ -80,14 +80,15 @@ type Config struct {
 // Connection manages the connection to the postgresql database, and maintains
 // a health check on the database connection.
 type Connection struct {
-	finder      finder
-	findList    findList
-	mutliInsert multiinserter
-	deleter     deleter
-	closer      closer
-	pinger      pinger
-	stats       stats
-	gennericDB  *sql.DB
+	finder       finder
+	findList     findList
+	deviceFinder deviceFinder
+	mutliInsert  multiinserter
+	deleter      deleter
+	closer       closer
+	pinger       pinger
+	stats        stats
+	gennericDB   *sql.DB
 
 	pruneLimit  int
 	health      *health.Health
@@ -150,6 +151,7 @@ func CreateDbConnection(config Config, provider provider.Provider, health *healt
 
 	dbConn.finder = conn
 	dbConn.findList = conn
+	dbConn.deviceFinder = conn
 	dbConn.mutliInsert = conn
 	dbConn.deleter = conn
 	dbConn.closer = conn
@@ -293,11 +295,23 @@ func (c *Connection) GetRecordsToDelete(shard int, limit int, deathDate int64) (
 func (c *Connection) GetBlacklist() (list []blacklist.BlackListedItem, err error) {
 	err = c.findList.findBlacklist(&list)
 	if err != nil {
-		c.measures.SQLQueryFailureCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
+		c.measures.SQLQueryFailureCount.With(db.TypeLabel, db.BlacklistReadType).Add(1.0)
 		return []blacklist.BlackListedItem{}, emperror.WrapWith(err, "Getting records from database failed")
 	}
-	c.measures.SQLQuerySuccessCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
+	c.measures.SQLQuerySuccessCount.With(db.TypeLabel, db.BlacklistReadType).Add(1.0)
 	return
+}
+
+// GetDeviceList returns a list of device ids where the device id is greater
+// than the offset device id.
+func (c *Connection) GetDeviceList(offset string, limit int) ([]string, error) {
+	list, err := c.deviceFinder.getList(offset, limit)
+	if err != nil {
+		c.measures.SQLQueryFailureCount.With(db.TypeLabel, db.ReadType).Add(1.0)
+		return []string{}, emperror.WrapWith(err, "Getting list of devices from database failed")
+	}
+	c.measures.SQLQuerySuccessCount.With(db.TypeLabel, db.ReadType).Add(1.0)
+	return list, nil
 }
 
 // DeleteRecord removes a record.

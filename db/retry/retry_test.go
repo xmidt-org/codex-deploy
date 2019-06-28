@@ -389,8 +389,8 @@ func TestRetryGetBlacklist(t *testing.T) {
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
 			_, err := retryListGService.GetBlacklist()
 			mockObj.AssertExpectations(t)
-			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ListReadType)(xmetricstest.Value(tc.expectedRetryMetric))
-			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ListReadType)(xmetricstest.Value(1.0))
+			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.BlacklistReadType)(xmetricstest.Value(tc.expectedRetryMetric))
+			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.BlacklistReadType)(xmetricstest.Value(1.0))
 			if tc.expectedErr == nil || err == nil {
 				assert.Equal(tc.expectedErr, err)
 			} else {

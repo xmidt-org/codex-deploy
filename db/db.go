@@ -24,13 +24,12 @@ const (
 	// TypeLabel is for labeling metrics; if there is a single metric for
 	// successful queries, the typeLabel and corresponding type can be used
 	// when incrementing the metric.
-	TypeLabel  = "type"
-	InsertType = "insert"
-	DeleteType = "delete"
-	ReadType   = "read"
-	PingType   = "ping"
-	// ListReadType is for reading from the blacklist.
-	ListReadType = "listRead"
+	TypeLabel         = "type"
+	InsertType        = "insert"
+	DeleteType        = "delete"
+	ReadType          = "read"
+	PingType          = "ping"
+	BlacklistReadType = "blacklistRead"
 )
 
 // Record is the struct used to insert an event into the database.  It includes
