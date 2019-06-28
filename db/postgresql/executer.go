@@ -39,6 +39,9 @@ type (
 	findList interface {
 		findBlacklist(out *[]blacklist.BlackListedItem) error
 	}
+	deviceFinder interface {
+		getList(offset string, limit int, where ...interface{}) ([]string, error)
+	}
 	multiinserter interface {
 		insert(records []db.Record) (int64, error)
 	}
@@ -77,6 +80,14 @@ func (b *dbDecorator) findRecordsToDelete(limit int, shard int, deathDate int64)
 func (b *dbDecorator) findBlacklist(out *[]blacklist.BlackListedItem) error {
 	db := b.Find(out)
 	return db.Error
+}
+
+func (b *dbDecorator) getList(offset string, limit int, where ...interface{}) ([]string, error) {
+	var result []string
+	// Raw SQL
+	db := b.Raw("SELECT device_id from devices.events WHERE device_id > ? GROUP BY device_id LIMIT ?", offset, limit).Pluck("device_id", &result)
+	//db := b.Limit(limit).Select("device_id").Find(&[]Record{}, where).Group("device_id").Where("device_id > ?", offset).Pluck("device_id", &result)
+	return result, db.Error
 }
 
 func (b *dbDecorator) insert(records []db.Record) (int64, error) {

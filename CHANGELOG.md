@@ -5,7 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.8.0]
+- Refactored pruning
 - Added comments for godocs
+- Added a way to get a list of device ids
 
 ## [v0.7.0]
 - Added `record_id` to index
@@ -122,7 +126,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.7.0..HEAD
+[Unreleased]: https://github.com/Comcast/codex/compare/v0.8.0..HEAD
+[v0.8.0]: https://github.com/Comcast/codex/compare/v0.7.0...v0.8.0
 [v0.7.0]: https://github.com/Comcast/codex/compare/v0.6.0...v0.7.0
 [v0.6.0]: https://github.com/Comcast/codex/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/Comcast/codex/compare/v0.4.3...v0.5.0

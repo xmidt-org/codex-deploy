@@ -265,7 +265,7 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 	sleepTime := ltg.config.interval
 	for i := 0; i < retries+1; i++ {
 		if i > 0 {
-			ltg.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
+			ltg.config.measures.SQLQueryRetryCount.With(db.TypeLabel, db.BlacklistReadType).Add(1.0)
 			ltg.config.sleep(sleepTime)
 			sleepTime = sleepTime * ltg.config.intervalMult
 		}
@@ -274,7 +274,7 @@ func (ltg RetryListGService) GetBlacklist() (list []blacklist.BlackListedItem, e
 		}
 	}
 
-	ltg.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.ListReadType).Add(1.0)
+	ltg.config.measures.SQLQueryEndCount.With(db.TypeLabel, db.BlacklistReadType).Add(1.0)
 	return
 }
 
