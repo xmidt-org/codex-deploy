@@ -201,7 +201,7 @@ func TestRetryGetRecordIDs(t *testing.T) {
 			}
 			p.Assert(t, SQLQueryRetryCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryEndCounter)(xmetricstest.Value(0.0))
-			_, err := retryUpdateService.GetRecordsToDelete(0, 0, time.Now().Unix())
+			_, err := retryUpdateService.GetRecordsToDelete(0, 0, time.Now().UnixNano())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQueryRetryCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedRetryMetric))
 			p.Assert(t, SQLQueryEndCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(1.0))
