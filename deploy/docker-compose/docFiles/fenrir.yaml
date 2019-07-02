@@ -33,7 +33,7 @@ pruner:
   getWaitTime: 10s
   getLimit: 100
   maxBatchSize: 10
-  queueSize: 10000
+  setSize: 10000
   maxWorkers: 1000
   deleteWaitTime: 1s
 
