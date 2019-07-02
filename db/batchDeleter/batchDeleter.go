@@ -22,6 +22,7 @@ package batchDeleter
 
 import (
 	"errors"
+	"github.com/Comcast/codex/capacityset"
 	"sync"
 	"time"
 
@@ -39,8 +40,8 @@ const (
 	minMaxBatchSize     = 1
 	defaultMaxBatchSize = 1
 	minQueryWaitTime    = 0
-	minQueueSize        = 5
-	defaultQueueSize    = 1000
+	minSetSize          = 5
+	defaultSetSize      = 1000
 	minDeleteWaitTime   = 1 * time.Millisecond
 	minGetLimit         = 0
 	defaultGetLimit     = 10
@@ -57,7 +58,7 @@ type Config struct {
 	Shard          int
 	MaxWorkers     int
 	MaxBatchSize   int
-	QueueSize      int
+	SetSize        int
 	DeleteWaitTime time.Duration
 	GetLimit       int
 	GetWaitTime    time.Duration
@@ -67,7 +68,7 @@ type Config struct {
 // them.
 type BatchDeleter struct {
 	pruner        db.Pruner
-	deleteQueue   chan db.RecordToDelete
+	deleteSet     capacityset.Set
 	deleteWorkers semaphore.Interface
 	wg            sync.WaitGroup
 	measures      *Measures
@@ -91,8 +92,8 @@ func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.
 	if config.MaxBatchSize < minMaxBatchSize {
 		config.MaxBatchSize = defaultMaxBatchSize
 	}
-	if config.QueueSize < minQueueSize {
-		config.QueueSize = defaultQueueSize
+	if config.SetSize < minSetSize {
+		config.SetSize = defaultSetSize
 	}
 	if config.DeleteWaitTime < minDeleteWaitTime {
 		config.DeleteWaitTime = minDeleteWaitTime
@@ -109,12 +110,11 @@ func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.
 
 	measures := NewMeasures(metricsRegistry)
 	workers := semaphore.New(config.MaxWorkers)
-	queue := make(chan db.RecordToDelete, config.QueueSize)
 	stop := make(chan struct{}, 1)
 
 	return &BatchDeleter{
 		pruner:        pruner,
-		deleteQueue:   queue,
+		deleteSet:     capacityset.NewCapacitySet(config.SetSize),
 		deleteWorkers: workers,
 		config:        config,
 		logger:        logger,
@@ -148,7 +148,6 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 		select {
 		case <-d.stop:
 			d.stopTicker()
-			close(d.deleteQueue)
 			return
 		case <-ticker:
 			vals, err := d.pruner.GetRecordsToDelete(d.config.Shard, d.config.GetLimit, time.Now().UnixNano())
@@ -173,9 +172,10 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 			// }
 
 			for _, i := range vals {
-				d.deleteQueue <- i
-				if d.measures != nil {
-					d.measures.DeletingQueue.Add(1.0)
+				if d.deleteSet.Add(i) {
+					if d.measures != nil {
+						d.measures.DeletingQueue.Add(1.0)
+					}
 				}
 			}
 		}
@@ -184,13 +184,24 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 
 func (d *BatchDeleter) delete() {
 	defer d.wg.Done()
-	for records := range d.deleteQueue {
-		if d.measures != nil {
-			d.measures.DeletingQueue.Add(-1.0)
+
+deleteLoop:
+	for {
+		select {
+		case <-d.stop:
+			break deleteLoop
+		case item := <-capacityset.SendToChannel(d.deleteSet.Pop):
+			if item == nil {
+				continue
+			}
+			record := item.(db.RecordToDelete)
+			if d.measures != nil {
+				d.measures.DeletingQueue.Add(-1.0)
+			}
+			d.deleteWorkers.Acquire()
+			go d.deleteWorker(record)
+			d.sleep(d.config.DeleteWaitTime)
 		}
-		d.deleteWorkers.Acquire()
-		go d.deleteWorker(records)
-		d.sleep(d.config.DeleteWaitTime)
 	}
 
 	// Grab all the workers to make sure they are done.
