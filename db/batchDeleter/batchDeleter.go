@@ -190,7 +190,7 @@ deleteLoop:
 		select {
 		case <-d.stop:
 			break deleteLoop
-		case item := <-capacityset.WrapBlockingCall(d.deleteSet.Pop):
+		case item := <-capacityset.SendToChannel(d.deleteSet.Pop):
 			if item == nil {
 				continue
 			}
