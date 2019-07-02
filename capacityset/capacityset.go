@@ -15,7 +15,6 @@
  *
  */
 
-
 package capacityset
 
 import (
