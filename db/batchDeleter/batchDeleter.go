@@ -77,7 +77,6 @@ type BatchDeleter struct {
 	sleep         func(time.Duration)
 	stopTicker    func()
 	stop          chan struct{}
-	deleteStop    chan struct{}
 }
 
 // NewBatchDeleter creates a BatchDeleter with the given values, ensuring
@@ -122,7 +121,6 @@ func NewBatchDeleter(config Config, logger log.Logger, metricsRegistry provider.
 		sleep:         defaultSleep,
 		stop:          stop,
 		measures:      measures,
-		deleteStop:    make(chan struct{}, 1),
 	}, nil
 }
 
@@ -141,7 +139,6 @@ func (d *BatchDeleter) Start() {
 // everything to stop.
 func (d *BatchDeleter) Stop() {
 	close(d.stop)
-	d.deleteStop <- struct{}{}
 	d.wg.Wait()
 }
 
@@ -191,7 +188,7 @@ func (d *BatchDeleter) delete() {
 deleteLoop:
 	for {
 		select {
-		case <-d.deleteStop:
+		case <-d.stop:
 			break deleteLoop
 		case item := <-capacityset.WrapBlockingCall(d.deleteSet.Pop):
 			if item == nil {

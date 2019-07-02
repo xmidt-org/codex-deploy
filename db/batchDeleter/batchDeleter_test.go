@@ -147,7 +147,6 @@ func TestGetRecordsToDeleteSuccess(t *testing.T) {
 		},
 		stop:       stopChan,
 		stopTicker: stopFunc,
-		deleteStop: make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
@@ -187,7 +186,6 @@ func TestGetRecordsToDeleteError(t *testing.T) {
 		},
 		stop:       stopChan,
 		stopTicker: stopFunc,
-		deleteStop: make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
@@ -227,8 +225,8 @@ func TestDelete(t *testing.T) {
 			MaxWorkers:     3,
 			DeleteWaitTime: sleepTime,
 		},
-		sleep:      sleepFunc,
-		deleteStop: make(chan struct{}, 1),
+		sleep: sleepFunc,
+		stop:  make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
@@ -236,7 +234,7 @@ func TestDelete(t *testing.T) {
 	batchDeleter.deleteSet.Add(vals)
 	go batchDeleter.delete()
 	time.Sleep(time.Second)
-	batchDeleter.deleteStop <- struct{}{}
+	batchDeleter.Stop()
 	batchDeleter.wg.Wait()
 
 	pruner.AssertExpectations(t)
