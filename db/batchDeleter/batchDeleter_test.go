@@ -19,6 +19,7 @@ package batchDeleter
 
 import (
 	"errors"
+	"github.com/Comcast/codex/capacityset"
 	"os"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestNewBatchDeleter(t *testing.T) {
 	goodRegistry := xmetricstest.NewProvider(nil, Metrics)
 	goodMeasures := NewMeasures(goodRegistry)
 	goodConfig := Config{
-		QueueSize:      1000,
+		SetSize:        1000,
 		MaxWorkers:     5000,
 		MaxBatchSize:   100,
 		DeleteWaitTime: 5 * time.Hour,
@@ -84,7 +85,7 @@ func TestNewBatchDeleter(t *testing.T) {
 				config: Config{
 					MaxBatchSize:   defaultMaxBatchSize,
 					DeleteWaitTime: minDeleteWaitTime,
-					QueueSize:      defaultQueueSize,
+					SetSize:        defaultSetSize,
 					MaxWorkers:     defaultMaxWorkers,
 					GetLimit:       defaultGetLimit,
 					GetWaitTime:    minDeleteWaitTime,
@@ -125,7 +126,6 @@ func TestGetRecordsToDeleteSuccess(t *testing.T) {
 	vals := []db.RecordToDelete{{DeathDate: 1, RecordID: 2}, {DeathDate: 3, RecordID: 4}}
 	pruner := new(mockPruner)
 	pruner.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return(vals, nil).Once()
-	queue := make(chan db.RecordToDelete, 2)
 	tickerChan := make(chan time.Time, 1)
 	stopChan := make(chan struct{}, 1)
 	p := xmetricstest.NewProvider(nil, Metrics)
@@ -139,7 +139,7 @@ func TestGetRecordsToDeleteSuccess(t *testing.T) {
 	batchDeleter := &BatchDeleter{
 		pruner:        pruner,
 		logger:        defaultLogger,
-		deleteQueue:   queue,
+		deleteSet:     capacityset.NewCapacitySet(2),
 		deleteWorkers: semaphore.New(3),
 		measures:      measures,
 		config: Config{
@@ -147,6 +147,7 @@ func TestGetRecordsToDeleteSuccess(t *testing.T) {
 		},
 		stop:       stopChan,
 		stopTicker: stopFunc,
+		deleteStop: make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
@@ -165,7 +166,6 @@ func TestGetRecordsToDeleteError(t *testing.T) {
 	assert := assert.New(t)
 	pruner := new(mockPruner)
 	pruner.On("GetRecordsToDelete", mock.Anything, mock.Anything, mock.Anything).Return([]db.RecordToDelete{}, errors.New("test error")).Once()
-	queue := make(chan db.RecordToDelete, 2)
 	tickerChan := make(chan time.Time, 1)
 	stopChan := make(chan struct{}, 1)
 	p := xmetricstest.NewProvider(nil, Metrics)
@@ -179,7 +179,7 @@ func TestGetRecordsToDeleteError(t *testing.T) {
 	batchDeleter := &BatchDeleter{
 		pruner:        pruner,
 		logger:        defaultLogger,
-		deleteQueue:   queue,
+		deleteSet:     capacityset.NewCapacitySet(2),
 		deleteWorkers: semaphore.New(3),
 		measures:      measures,
 		config: Config{
@@ -187,6 +187,7 @@ func TestGetRecordsToDeleteError(t *testing.T) {
 		},
 		stop:       stopChan,
 		stopTicker: stopFunc,
+		deleteStop: make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
@@ -206,7 +207,6 @@ func TestDelete(t *testing.T) {
 	vals := db.RecordToDelete{DeathDate: 111, RecordID: 88888}
 	pruner := new(mockPruner)
 	pruner.On("DeleteRecord", 0, vals.DeathDate, vals.RecordID).Return(nil).Once()
-	queue := make(chan db.RecordToDelete, 2)
 	p := xmetricstest.NewProvider(nil, Metrics)
 	measures := NewMeasures(p)
 
@@ -220,21 +220,23 @@ func TestDelete(t *testing.T) {
 	batchDeleter := &BatchDeleter{
 		pruner:        pruner,
 		logger:        defaultLogger,
-		deleteQueue:   queue,
+		deleteSet:     capacityset.NewCapacitySet(2),
 		deleteWorkers: semaphore.New(3),
 		measures:      measures,
 		config: Config{
 			MaxWorkers:     3,
 			DeleteWaitTime: sleepTime,
 		},
-		sleep: sleepFunc,
+		sleep:      sleepFunc,
+		deleteStop: make(chan struct{}, 1),
 	}
 
 	p.Assert(t, DeletingQueueDepth)(xmetricstest.Value(0))
 	batchDeleter.wg.Add(1)
+	batchDeleter.deleteSet.Add(vals)
 	go batchDeleter.delete()
-	queue <- vals
-	close(queue)
+	time.Sleep(time.Second)
+	batchDeleter.deleteStop <- struct{}{}
 	batchDeleter.wg.Wait()
 
 	pruner.AssertExpectations(t)
