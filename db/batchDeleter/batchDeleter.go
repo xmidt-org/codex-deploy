@@ -151,7 +151,7 @@ func (d *BatchDeleter) getRecordsToDelete(ticker <-chan time.Time) {
 			close(d.deleteQueue)
 			return
 		case <-ticker:
-			vals, err := d.pruner.GetRecordsToDelete(d.config.Shard, d.config.GetLimit, time.Now().Unix())
+			vals, err := d.pruner.GetRecordsToDelete(d.config.Shard, d.config.GetLimit, time.Now().UnixNano())
 			if err != nil {
 				logging.Error(d.logger, emperror.Context(err)...).Log(logging.MessageKey(),
 					"Failed to get record IDs from the database", logging.ErrorKey(), err.Error())

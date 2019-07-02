@@ -212,7 +212,7 @@ func TestGetRecordIDs(t *testing.T) {
 			p.Assert(t, SQLQuerySuccessCounter)(xmetricstest.Value(0.0))
 			p.Assert(t, SQLQueryFailureCounter)(xmetricstest.Value(0.0))
 
-			records, err := dbConnection.GetRecordsToDelete(0, 0, time.Now().Unix())
+			records, err := dbConnection.GetRecordsToDelete(0, 0, time.Now().UnixNano())
 			mockObj.AssertExpectations(t)
 			p.Assert(t, SQLQuerySuccessCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedSuccessMetric))
 			p.Assert(t, SQLQueryFailureCounter, db.TypeLabel, db.ReadType)(xmetricstest.Value(tc.expectedFailureMetric))
