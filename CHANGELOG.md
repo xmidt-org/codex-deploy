@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.11.0]
+- Separated out library packages, so only deploy and tests are left.
+
 ## [v0.10.0]
 - Added `capacityset` package
 - Changed `batchDeleter` to leverage `capacityset`
@@ -133,34 +136,35 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 - Created `db` and `xvault` package
 
-[Unreleased]: https://github.com/Comcast/codex/compare/v0.10.0..HEAD
-[v0.10.0]: https://github.com/Comcast/codex/compare/v0.9.0...v0.10.0
-[v0.9.0]: https://github.com/Comcast/codex/compare/v0.8.0...v0.9.0
-[v0.8.0]: https://github.com/Comcast/codex/compare/v0.7.0...v0.8.0
-[v0.7.0]: https://github.com/Comcast/codex/compare/v0.6.0...v0.7.0
-[v0.6.0]: https://github.com/Comcast/codex/compare/v0.5.0...v0.6.0
-[v0.5.0]: https://github.com/Comcast/codex/compare/v0.4.3...v0.5.0
-[v0.4.3]: https://github.com/Comcast/codex/compare/v0.4.2...v0.4.3
-[v0.4.2]: https://github.com/Comcast/codex/compare/v0.4.1...v0.4.2
-[v0.4.1]: https://github.com/Comcast/codex/compare/v0.4.0...v0.4.1
-[v0.4.0]: https://github.com/Comcast/codex/compare/v0.3.3...v0.4.0
-[v0.3.3]: https://github.com/Comcast/codex/compare/v0.3.2...v0.3.3
-[v0.3.2]: https://github.com/Comcast/codex/compare/v0.3.1...v0.3.2
-[v0.3.1]: https://github.com/Comcast/codex/compare/v0.3.0...v0.3.1
-[v0.3.0]: https://github.com/Comcast/codex/compare/v0.2.9...v0.3.0
-[v0.2.9]: https://github.com/Comcast/codex/compare/v0.2.8...v0.2.9
-[v0.2.8]: https://github.com/Comcast/codex/compare/v0.2.7...v0.2.8
-[v0.2.7]: https://github.com/Comcast/codex/compare/v0.2.6...v0.2.7
-[v0.2.6]: https://github.com/Comcast/codex/compare/v0.2.5...v0.2.6
-[v0.2.5]: https://github.com/Comcast/codex/compare/v0.2.4...v0.2.5
-[v0.2.4]: https://github.com/Comcast/codex/compare/v0.2.3...v0.2.4
-[v0.2.3]: https://github.com/Comcast/codex/compare/v0.2.2...v0.2.3
-[v0.2.2]: https://github.com/Comcast/codex/compare/v0.2.1...v0.2.2
-[v0.2.1]: https://github.com/Comcast/codex/compare/v0.2.0...v0.2.1
-[v0.2.0]: https://github.com/Comcast/codex/compare/v0.1.5...v0.2.0
-[v0.1.5]: https://github.com/Comcast/codex/compare/v0.1.4...v0.1.5
-[v0.1.4]: https://github.com/Comcast/codex/compare/v0.1.3...v0.1.4
-[v0.1.3]: https://github.com/Comcast/codex/compare/v0.1.2...v0.1.3
-[v0.1.2]: https://github.com/Comcast/codex/compare/v0.1.1...v0.1.2
-[v0.1.1]: https://github.com/Comcast/codex/compare/v0.1.0...v0.1.1
-[v0.1.0]: https://github.com/Comcast/codex/compare/0.0.0...v0.1.0
+[Unreleased]: https://github.com/xmidt-org/codex-deploy/compare/v0.11.0..HEAD
+[v0.11.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.10.0...v0.11.0
+[v0.10.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.9.0...v0.10.0
+[v0.9.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.8.0...v0.9.0
+[v0.8.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.7.0...v0.8.0
+[v0.7.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.6.0...v0.7.0
+[v0.6.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.5.0...v0.6.0
+[v0.5.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.4.3...v0.5.0
+[v0.4.3]: https://github.com/xmidt-org/codex-deploy/compare/v0.4.2...v0.4.3
+[v0.4.2]: https://github.com/xmidt-org/codex-deploy/compare/v0.4.1...v0.4.2
+[v0.4.1]: https://github.com/xmidt-org/codex-deploy/compare/v0.4.0...v0.4.1
+[v0.4.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.3.3...v0.4.0
+[v0.3.3]: https://github.com/xmidt-org/codex-deploy/compare/v0.3.2...v0.3.3
+[v0.3.2]: https://github.com/xmidt-org/codex-deploy/compare/v0.3.1...v0.3.2
+[v0.3.1]: https://github.com/xmidt-org/codex-deploy/compare/v0.3.0...v0.3.1
+[v0.3.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.9...v0.3.0
+[v0.2.9]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.8...v0.2.9
+[v0.2.8]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.7...v0.2.8
+[v0.2.7]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.6...v0.2.7
+[v0.2.6]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.5...v0.2.6
+[v0.2.5]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.4...v0.2.5
+[v0.2.4]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.3...v0.2.4
+[v0.2.3]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.2...v0.2.3
+[v0.2.2]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.1...v0.2.2
+[v0.2.1]: https://github.com/xmidt-org/codex-deploy/compare/v0.2.0...v0.2.1
+[v0.2.0]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.5...v0.2.0
+[v0.1.5]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.4...v0.1.5
+[v0.1.4]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.3...v0.1.4
+[v0.1.3]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.2...v0.1.3
+[v0.1.2]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.1...v0.1.2
+[v0.1.1]: https://github.com/xmidt-org/codex-deploy/compare/v0.1.0...v0.1.1
+[v0.1.0]: https://github.com/xmidt-org/codex-deploy/compare/0.0.0...v0.1.0

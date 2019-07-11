@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Comcast/codex/tests/common"
+	"github.com/xmidt-org/codex-deploy/tests/common"
 
 	"github.com/DATA-DOG/godog"
 )
