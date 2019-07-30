@@ -70,7 +70,7 @@ webhook:
   registrationURL: "https://127.0.0.1:6000/hook"
   request:
     config:
-      url: "http://host.docker.internal:8181/api/v1/device-status"
+      url: "http://host.docker.internal:8181"
       secret: "super secret"
       maxRetryCount: 3
     events: ["device-status.*"]
