@@ -60,18 +60,26 @@ db:
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
+secret:
+  header: "X-Webpa-Signature"
+  delimiter: "="
+
 webhook:
-  registrationInterval: 4m
-  url: "http://host.docker.internal:8181/api/v1/device-status"
+  registrationInterval: 1m
   timeout: "1m"
   registrationURL: "https://127.0.0.1:6000/hook"
-  eventsToWatch: ["device-status.*"]
-  secret: "super secret"
-  sat:
-    client: ""
-    secret: ""
-    satURL: ""
+  request:
+    config:
+      url: "http://host.docker.internal:8181/api/v1/device-status"
+      secret: "super secret"
+      maxRetryCount: 3
+    events: ["device-status.*"]
+  jwt:
+    requestHeaders: 
+      "": ""
+    authURL: ""
     timeout: 5m
+    buffer: 5s
 
 
 cipher:
