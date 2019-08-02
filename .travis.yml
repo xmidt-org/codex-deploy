@@ -22,7 +22,7 @@ branches:
 
 script:
   - if [ -n "$(gofmt -s -l . | grep -v "vendor")" ]; then diff -u <(echo -n) <(gofmt -d $(gofmt -s -l . | grep -v "vendor")); fi
-  - go test -v -race -coverprofile=coverage.txt  $(go list ./... | grep -v "/vendor/")
+  - GO111MODULE=on go test -v -race -coverprofile=coverage.txt  ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
