@@ -9,11 +9,11 @@ CREATE TABLE devices.events (device_id  varchar,
     kid varchar,
     PRIMARY KEY (device_id, birthdate, record_type))
     WITH CLUSTERING ORDER BY (birthdate DESC, record_type ASC)
-    AND default_time_to_live = 2768400
+    AND default_time_to_live = 300
     AND transactions = {'enabled': 'false'};
 CREATE INDEX search_by_record_type ON devices.events
     (device_id, record_type, birthdate)
     WITH CLUSTERING ORDER BY (record_type ASC, birthdate DESC)
-    AND default_time_to_live = 2768400
+    AND default_time_to_live = 300
     AND transactions = {'enabled': 'false', 'consistency_level':'user_enforced'};
 CREATE TABLE devices.blacklist (device_id varchar PRIMARY KEY, reason varchar);
