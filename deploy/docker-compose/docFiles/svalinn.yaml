@@ -49,14 +49,10 @@ health:
   endpoint: "/health"
 
 db:
-  server: "db:26257"
-  username: "roachadmin"
+  hosts:
+    - "yb-tserver"
   database: "devices"
-  numRetries: 1
-  waitTimeMult: 5
-  pingInterval: 1s
-  connectTimeout: 1m
-  opTimeout: 5s
+  opTimeout: 1s
 
 authHeader: ["YXV0aEhlYWRlcg=="]
 
@@ -75,7 +71,7 @@ webhook:
       maxRetryCount: 3
     events: ["device-status.*"]
   jwt:
-    requestHeaders: 
+    requestHeaders:
       "": ""
     authURL: ""
     timeout: 5m
