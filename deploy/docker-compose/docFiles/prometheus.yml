@@ -52,13 +52,31 @@ scrape_configs:
 
     static_configs:
       - targets: ['fenrir:7203']
-  - job_name: 'cockroachdb'
-    metrics_path: /_status/vars
+  - job_name: 'yugabytedb'
+    metrics_path: /prometheus-metrics
 
     # scheme defaults to 'http'.
     metric_relabel_configs:
       - source_labels: [__name__]
         target_label: __name__
-        replacement: "codex_cockroachdb_${1}"
+        replacement: "yugabyte_${1}"
     static_configs:
-      - targets: ['db:8080']
+      - targets: ['yb-master-n1:7000']
+        labels:
+          group: 'yb-master'
+
+      - targets: ['yb-tserver-n1:9000']
+        labels:
+          group: 'yb-tserver'
+
+      - targets: ['yb-tserver-n1:11000']
+        labels:
+          group: 'yedis'
+
+      - targets: ['yb-tserver-n1:12000']
+        labels:
+          group: 'ycql'
+
+      - targets: ['yb-tserver-n1:13000']
+        labels:
+          group: 'ysql'

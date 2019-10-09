@@ -29,14 +29,10 @@ retryInterval: 0s
 blacklistInterval: 1m
 
 db:
-  server: "db:26257"
-  username: "roachadmin"
+  hosts:
+    - "yb-tserver"
   database: "devices"
-  numRetries: 1
-  waitTimeMult: 5
-  pingInterval: 1s
-  connectTimeout: 1m
-  opTimeout: 100ms
+  opTimeout: 1s
 
 cipher:
   - type: rsa-sym

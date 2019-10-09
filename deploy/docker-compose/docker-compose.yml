@@ -16,7 +16,7 @@ services:
     networks:
       - back-tier
     depends_on:
-      - db
+      - yb-tserver
 
   svalinn:
     image: svalinn:${SVALINN_VERSION}
@@ -33,7 +33,7 @@ services:
     networks:
       - back-tier
     depends_on:
-      - db
+      - yb-tserver
 
   fenrir:
     image: fenrir:${FENRIR_VERSION}
@@ -46,33 +46,56 @@ services:
     networks:
       - back-tier
     depends_on:
-      - db
+      - yb-tserver
 
-  db:
-    image: cockroachdb/cockroach:v2.1.4
-    container_name: db
-    command: start --insecure
-    ports:
-      - 26257:26257
-      - 8080:8080
-    networks:
-      - back-tier
-    volumes:
-      - ./cockroach-data/roach1:/cockroach/cockroach-data
-      - ./certs:/cockroach/certs
+  yb-master:
+      image: yugabytedb/yugabyte:latest
+      container_name: yb-master-n1
+      command: [ "/home/yugabyte/bin/yb-master",
+                "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
+                "--master_addresses=yb-master-n1:7100",
+                "--replication_factor=1"]
+      networks:
+        - back-tier
+      ports:
+      - "7111:7000"
+      environment:
+        SERVICE_7000_NAME: yb-master
 
-
+  yb-tserver:
+      image: yugabytedb/yugabyte:latest
+      container_name: yb-tserver-n1
+      command: [ "/home/yugabyte/bin/yb-tserver",
+                "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
+                "--tserver_master_addrs=yb-master-n1:7100"]
+      networks:
+        - back-tier
+      ports:
+      - "9042:9042"
+      - "6379:6379"
+      - "5433:5433"
+      - "9000:9000"
+      environment:
+        SERVICE_5433_NAME: ysql
+        SERVICE_9042_NAME: ycql
+        SERVICE_6379_NAME: yedis
+        SERVICE_9000_NAME: yb-tserver
+      depends_on:
+      - yb-master
   db-init:
-    image: cockroachdb/cockroach:v2.1.4
-    container_name: db-init
-    networks:
-      - back-tier
-    volumes:
-      - ./setup_db.sh:/setup_db.sh
-    entrypoint: "/bin/bash"
-    command: /setup_db.sh
-    depends_on:
-      - db
+      image: yugabytedb/yugabyte:latest
+      container_name: db-init
+      networks:
+        - back-tier
+      volumes:
+        - ./docFiles/create_db.cql:/create_db.cql
+      entrypoint: "/bin/bash"
+      command: [ "/home/yugabyte/bin/cqlsh",
+                "yb-tserver",
+                "-f",
+                "/create_db.cql"]
+      depends_on:
+        - yb-tserver
 
   prometheus:
     image: prom/prometheus

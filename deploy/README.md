@@ -13,7 +13,7 @@ In order to deploy into Docker, make sure [Docker is installed](https://docs.doc
    export GUNGNIR_VERSION=local
    export FENRIR_VERSION=local
    ```
-   If you don't want to set environment variables, set them inline with each 
+   If you don't want to set environment variables, set them inline with each
    `docker-compose` command below.
 
 3. To bring the containers up run:
@@ -22,7 +22,7 @@ In order to deploy into Docker, make sure [Docker is installed](https://docs.doc
    ```
    If you only want to bring up, for example, the database and Svalinn, run:
    ```bash
-   docker-compose up -d db db-init svalinn
+   docker-compose up -d yb-master yb-tserver db-init svalinn
    ```
    This can be done with any combination of services and the database.
 
