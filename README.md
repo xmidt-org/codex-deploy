@@ -4,7 +4,7 @@ Codex provides a historical context about devices connected to [XMiDT](https://g
 
 [![Build Status](https://travis-ci.com/xmidt-org/codex-deploy.svg?branch=master)](https://travis-ci.com/xmidt-org/codex-deploy)
 [![codecov.io](http://codecov.io/github/xmidt-org/codex-deploy/coverage.svg?branch=master)](http://codecov.io/github/xmidt-org/codex-deploy?branch=master)
-[![Code Climate](https://codeclimate.com/github/xmidt-org/codex-deploy/badges/gpa.svg)](https://codeclimate.com/github/xmidt-org/codex-deploy)
+[![Code Climate](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github.com/xmidt-org/codex-deploy)
 [![Issue Count](https://codeclimate.com/github/xmidt-org/codex-deploy/badges/issue_count.svg)](https://codeclimate.com/github/xmidt-org/codex-deploy)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xmidt-org/codex-deploy)](https://goreportcard.com/report/github.com/xmidt-org/codex-deploy)
 [![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/codex-deploy/blob/master/LICENSE)
