@@ -31,6 +31,7 @@ used to implement codex.
   provide device information from the database.
 * **[Fenrir](https://github.com/xmidt-org/fenrir):** Deletes old records 
   from the database at an interval.
+* **[Heimdall](github.com/xmidt-org/heimdall):** Heimdall provides metrics to determine how accurate Codex is at determining if a device is connected to XMiDT.
 
 ## Install
 This repo is a library of packages used for the codex project.  There is no 
