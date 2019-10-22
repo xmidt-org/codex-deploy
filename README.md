@@ -44,6 +44,7 @@ By participating, you agree to this Code.
   provide device information from the database.
 * **[Fenrir](https://github.com/xmidt-org/fenrir):** Deletes old records 
   from the database at an interval.
+* **[Heimdall](https://github.com/xmidt-org/heimdall):** A consumer of Codex (sends requests to Gungnir) but also requests directly to the database to get a list of device IDs.
 
 ## Install
 This repo is a library of packages used for the codex project.  There is no 
