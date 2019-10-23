@@ -31,7 +31,7 @@ By participating, you agree to this Code.
 
 ## The Pieces
 
-<img src="./docs/images/flow.png" width=720 />
+<img src="./docs/images/flow_v.2.png" width=720 />
 
 * **Database:** Any postgres database will work.  In `deploy/`, cockroachdb is 
   used.  The services connect to the database using the [codex-db](https://github.com/xmidt-org/codex-db) 
