@@ -16,9 +16,22 @@ Codex accepts incoming events, stores them in a postgres database, and
 provides event information by device id.  This repo is a library of packages 
 used to implement codex.
 
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [The Pieces](#the-pieces)
+- [Install](#install)
+- [Deploy](#deploy)
+- [Contributing](#contributing)
+
+## Code of Conduct
+
+This project and everyone participating in it are governed by the [XMiDT Code Of Conduct](https://xmidt.io/code_of_conduct/). 
+By participating, you agree to this Code.
+
 ## The Pieces
 
-<img src="./docs/images/flow.png" width=720 />
+<img src="./docs/images/NorseMythologyLeadsToPostgres.png" width=720 />
 
 * **Database:** Any postgres database will work.  In `deploy/`, cockroachdb is 
   used.  The services connect to the database using the [codex-db](https://github.com/xmidt-org/codex-db) 
