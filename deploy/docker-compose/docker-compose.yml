@@ -35,19 +35,6 @@ services:
     depends_on:
       - yb-tserver
 
-  fenrir:
-    image: fenrir:${FENRIR_VERSION}
-    container_name: fenrir
-    restart: on-failure
-    ports:
-      - 7203:7203
-    volumes:
-      - ./docFiles/fenrir.yaml:/etc/fenrir/fenrir.yaml
-    networks:
-      - back-tier
-    depends_on:
-      - yb-tserver
-
   yb-master:
       image: yugabytedb/yugabyte:latest
       container_name: yb-master-n1
@@ -91,7 +78,7 @@ services:
         - ./docFiles/create_db.cql:/create_db.cql
       entrypoint: "/bin/bash"
       command: [ "/home/yugabyte/bin/cqlsh",
-                "yb-tserver",
+                "yb-tserver-n1",
                 "-f",
                 "/create_db.cql"]
       depends_on:
