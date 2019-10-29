@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   gungnir:
-    image: gungnir:${GUNGNIR_VERSION}
+    image: xmidt/gungnir:${GUNGNIR_VERSION}
     container_name: gungnir
     restart: on-failure
     ports:
@@ -19,7 +19,7 @@ services:
       - yb-tserver
 
   svalinn:
-    image: svalinn:${SVALINN_VERSION}
+    image: xmidt/svalinn:${SVALINN_VERSION}
     container_name: svalinn
     restart: on-failure
     ports:
