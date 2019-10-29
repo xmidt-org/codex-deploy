@@ -4,29 +4,26 @@
 
 In order to deploy into Docker, make sure [Docker is installed](https://docs.docker.com/install/).
 
-1. Have the services you want to bring up built (Svalinn, Gungnir, and Fenrir).
+1. Clone this repository.
 
-2. Set an environment variables relevant for the services you are deploying. If
-   you aren't using locally built images, replace `local` with the correct tag:
-   ```bash
-   export SVALINN_VERSION=local
-   export GUNGNIR_VERSION=local
-   export FENRIR_VERSION=local
-   ```
-   If you don't want to set environment variables, set them inline with each
-   `docker-compose` command below.
+2. Run `deploy/docker-compose/deploy.sh`
+   
+    This will build `fenrir` locally. It will then run `docker-compose up` which uses images of `gungnir` and `svalinn1` from dockerhub.
 
-3. To bring the containers up run:
-   ```bash
-   docker-compose up -d
-   ```
-   If you only want to bring up, for example, the database and Svalinn, run:
-   ```bash
-   docker-compose up -d yb-master yb-tserver db-init svalinn
-   ```
-   This can be done with any combination of services and the database.
+    To pull specific versions of the images, just set the `<SERVICE>_VERSION` environment variables before running the script.
 
-4. To bring the containers down:
-   ```bash
-   docker-compose down
-   ```
+    ```bash
+    export SVALINN_VERSION=x.x.x
+    export GUNGNIR_VERSION=x.x.x
+    export FENRIR_VERSION=x.x.x
+    ```
+    If you don't want to set environment variables, set them inline when you run the script.
+
+    ```
+    SVALINN_VERSION=x.x.x deploy/docker-compose/deploy.sh
+    ```
+
+3. To bring the containers down:
+    ```bash
+    docker-compose -f deploy/docker-compose/docker-compose.yml down
+    ```
