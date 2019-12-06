@@ -39,9 +39,7 @@ batchInserter:
   maxBatchSize: 30
   maxBatchWaitTime: 10ms
 insertRetries:
-  numRetries: 0
-  interval: 1s
-  intervalMult: 5
+  maxElapsedTime: -1
 blacklistInterval: 1m
 
 health:
@@ -50,7 +48,7 @@ health:
 
 db:
   hosts:
-    - "yb-tserver"
+    - "yb-tserver-n1"
   database: "devices"
   opTimeout: 1s
 
