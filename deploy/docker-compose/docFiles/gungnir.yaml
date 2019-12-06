@@ -24,13 +24,11 @@ health:
   endpoint: "/health"
 
 getLimit: 10
-getRetries: 0
-retryInterval: 0s
 blacklistInterval: 1m
 
 db:
   hosts:
-    - "yb-tserver"
+    - "yb-tserver-n1"
   database: "devices"
   opTimeout: 1s
 
