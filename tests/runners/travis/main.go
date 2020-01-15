@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xmidt-org/codex-deploy/tests/common"
-
 	"github.com/DATA-DOG/godog"
 )
 
@@ -38,7 +36,7 @@ func main() {
 	//wait for webhook registration
 
 	//wait for api
-	common.Debug()
+	//common.Debug()
 	//run tests
 	status := godog.RunWithOptions("godogs", func(s *godog.Suite) {
 		FeatureContext(s)
@@ -56,7 +54,12 @@ func main() {
 }
 
 func FeatureContext(s *godog.Suite) {
-
+	handleGungnir(s)
+	s.Step(`^for the feature "([^"]*)" the following environmental variables should be loaded "([^"]*)"$`, forTheFeatureTheFollowingEnvironmentalVariablesShouldBeLoaded)
 	s.Step(`^this test case is executed, the user should see "([^"]*)"$`, HelloWorld001)
+}
 
+func forTheFeatureTheFollowingEnvironmentalVariablesShouldBeLoaded(arg1, arg2 string) error {
+	fmt.Println("load params", arg1, arg2)
+	return nil
 }
