@@ -65,6 +65,7 @@ func (a *gungnirFeature) theData(data *gherkin.DataTable) error {
 			Type:      db.State,
 			BirthDate: time.Now().UnixNano(),
 			DeathDate: time.Now().Add(time.Hour).UnixNano(),
+			RowID:     gocql.TimeUUID().String(),
 		}
 		event := wrp.Message{
 			Type:        4,
