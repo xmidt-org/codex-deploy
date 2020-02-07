@@ -52,6 +52,8 @@ services:
   yb-tserver:
       image: yugabytedb/yugabyte:latest
       container_name: yb-tserver-n1
+      volumes:
+        - ./docFiles/create_db.cql:/create_db.cql
       command: [ "/home/yugabyte/bin/yb-tserver",
                 "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
                 "--tserver_master_addrs=yb-master-n1:7100"]
@@ -69,20 +71,6 @@ services:
         SERVICE_9000_NAME: yb-tserver
       depends_on:
       - yb-master
-  db-init:
-      image: yugabytedb/yugabyte:latest
-      container_name: db-init
-      networks:
-        - back-tier
-      volumes:
-        - ./docFiles/create_db.cql:/create_db.cql
-      entrypoint: "/bin/bash"
-      command: [ "/home/yugabyte/bin/cqlsh",
-                "yb-tserver-n1",
-                "-f",
-                "/create_db.cql"]
-      depends_on:
-        - yb-tserver
 
   prometheus:
     image: prom/prometheus
