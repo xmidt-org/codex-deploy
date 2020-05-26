@@ -12,7 +12,7 @@ Codex provides a historical context about devices connected to [XMiDT](https://g
 
 ## Summary
 
-Codex accepts incoming events, stores them in a postgres database, and 
+Codex accepts incoming events, stores them in a database, and 
 provides event information by device id.  This repo is a library of packages 
 used to implement codex.
 
@@ -33,7 +33,7 @@ By participating, you agree to this Code.
 
 <img src="./docs/images/NorseMythologyLeadsToPostgres.png" width=720 />
 
-* **Database:** Any postgres database will work.  In `deploy/`, cockroachdb is 
+* **Database:** Any postgres or cassandra database will work.  In `deploy/`, yugabyte is 
   used.  The services connect to the database using the [codex-db](https://github.com/xmidt-org/codex-db) 
   library.
 * **[Svalinn](https://github.com/xmidt-org/svalinn):** Registers to an 
@@ -42,7 +42,7 @@ By participating, you agree to this Code.
   parses them, and inserts them into the database.
 * **[Gungnir](https://github.com/xmidt-org/gungnir):** Has endpoints that 
   provide device information from the database.
-* **[Fenrir](https://github.com/xmidt-org/fenrir):** Deletes old records 
+* **[Fenrir](https://github.com/xmidt-org/fenrir) (Deprecated):** Deletes old records 
   from the database at an interval.
 * **[Heimdall](https://github.com/xmidt-org/heimdall):** A consumer of Codex (sends requests to Gungnir) but also requests directly to the database to get a list of device IDs.
 
