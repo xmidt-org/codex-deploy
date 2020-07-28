@@ -61,9 +61,9 @@ scrape_configs:
         target_label: __name__
         replacement: "yugabyte_${1}"
     static_configs:
-      - targets: ['yb-master-n1:7000']
+      - targets: ['yb-manager-n1:7000']
         labels:
-          group: 'yb-master'
+          group: 'yb-manager'
 
       - targets: ['yb-tserver-n1:9000']
         labels:
