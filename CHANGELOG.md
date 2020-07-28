@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 - Updated references to the main branch [#113](https://github.com/xmidt-org/codex-deploy/pull/113)
+- Updated references to yb-manager in docker-compose [#114](https://github.com/xmidt-org/codex-deploy/pull/114)
 
 ## [v0.11.0]
 - Separated out library packages, so only deploy and tests are left.
