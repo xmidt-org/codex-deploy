@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Updated references to the main branch [#113](https://github.com/xmidt-org/codex-deploy/pull/113)
 
 ## [v0.11.0]
 - Separated out library packages, so only deploy and tests are left.

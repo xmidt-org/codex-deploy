@@ -2,9 +2,9 @@
 
 Codex provides a historical context about devices connected to [XMiDT](https://github.com/Comcast/xmidt).
 
-[![Build Status](https://travis-ci.com/xmidt-org/codex-deploy.svg?branch=master)](https://travis-ci.com/xmidt-org/codex-deploy)
+[![Build Status](https://travis-ci.com/xmidt-org/codex-deploy.svg?branch=main)](https://travis-ci.com/xmidt-org/codex-deploy)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xmidt-org/codex-deploy)](https://goreportcard.com/report/github.com/xmidt-org/codex-deploy)
-[![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/codex-deploy/blob/master/LICENSE)
+[![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/xmidt-org/codex-deploy/blob/main/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/xmidt-org/codex-deploy.svg)](CHANGELOG.md)
 
 ## Summary

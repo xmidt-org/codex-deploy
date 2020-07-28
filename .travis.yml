@@ -18,7 +18,7 @@ install:
 
 branches:
     only:
-    - master
+    - main
 
 script:
   - if [ -n "$(gofmt -s -l . | grep -v "vendor")" ]; then diff -u <(echo -n) <(gofmt -d $(gofmt -s -l . | grep -v "vendor")); fi
