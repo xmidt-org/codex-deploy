@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/DATA-DOG/godog v0.7.13
-	github.com/gorilla/mux v1.7.0
+	github.com/gorilla/mux v1.8.0
 	github.com/xmidt-org/codex-db v0.5.2
 	github.com/xmidt-org/voynicrypto v0.1.1
 	github.com/xmidt-org/webpa-common v1.5.0
